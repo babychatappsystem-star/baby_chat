@@ -1,0 +1,49 @@
+import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { AppModule } from './app.module';
+import { GlobalExceptionFilter } from './shared/filters/http-exception.filter';
+import { Logger, ValidationPipe } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { join } from 'path';
+import * as morgan from 'morgan'
+
+async function bootstrap() {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  // whitelist: strip field không khai báo trong DTO ở mọi endpoint (defense-in-depth).
+  // Không dùng forbidNonWhitelisted (tránh 400 phá client hiện có) — chỉ silent-strip.
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
+  app.useGlobalFilters(new GlobalExceptionFilter());
+  app.enableCors();
+  app.use(morgan.default('dev'));
+
+  // Serve file đã upload tại /uploads/<filename>. UPLOAD_DIR khớp với LocalStorageProvider.
+  const uploadDir = process.env.UPLOAD_DIR ?? './uploads';
+  app.useStaticAssets(join(process.cwd(), uploadDir), { prefix: '/uploads' });
+
+  const config = new DocumentBuilder()
+    .setTitle('BabyChat API')
+    .setDescription('API cho ứng dụng chat BabyChat')
+    .setVersion('1.0')
+    .addBearerAuth(
+      { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+      'access-token',
+    )
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  const swaggerPath = 'api/docs';
+  SwaggerModule.setup(swaggerPath, app, document, {
+    swaggerOptions: {
+      tagsSorter: 'alpha',
+      operationsSorter: 'alpha',
+    },
+  });
+
+  const port = process.env.PORT ?? 3000;
+  await app.listen(port);
+
+  const logger = new Logger('Bootstrap');
+  logger.log(`Application is running on: http://localhost:${port}`);
+  logger.log(`Swagger is running on: http://localhost:${port}/${swaggerPath}`);
+}
+bootstrap();

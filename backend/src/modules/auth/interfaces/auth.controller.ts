@@ -1,0 +1,100 @@
+import { Body, Controller, HttpCode, HttpStatus, Post, Get, UseGuards, Request } from "@nestjs/common";
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from "@nestjs/swagger";
+import { JwtService } from "@nestjs/jwt";
+import { JwtAuthGuard } from "./guards/jwt-auth.guard";
+import { CurrentUser } from "src/shared/decorators/current-user.decorator";
+import { RegisterDto, LoginDto } from "./dto/auth.dto";
+import { RefreshTokenDto } from "./dto/refresh-token.dto";
+import { AuthResponseDto, ProfileResponseDto, LogoutResponseDto } from "./dto/auth-response.dto";
+import { AuthMapper } from "./dto/auth.mapper";
+import { RegisterUserUseCase } from "src/modules/auth/application/use-cases/register-user.usecase";
+import { LoginUserUseCase } from "src/modules/auth/application/use-cases/login-user.usecase";
+import { GetProfileUseCase } from "src/modules/user/application/use-cases/get-profile.usecase";
+import { RefreshTokensUseCase } from "src/modules/auth/application/use-cases/refresh-tokens.usecase";
+import { RevokeRefreshTokenUseCase } from "src/modules/auth/application/use-cases/revoke-refresh-token.usecase";
+import { TokenBlacklistService } from "../infrastructure/token-blacklist.service";
+
+// Controller xử lý đăng ký/đăng nhập/đăng xuất. Chỉ orchestrate — gọi use case.
+@ApiTags('auth')
+@Controller('auth')
+export class AuthController {
+  constructor(
+    private readonly registerUserUseCase: RegisterUserUseCase,
+    private readonly loginUserUseCase: LoginUserUseCase,
+    private readonly getProfileUseCase: GetProfileUseCase,
+    private readonly refreshTokensUseCase: RefreshTokensUseCase,
+    private readonly revokeRefreshTokenUseCase: RevokeRefreshTokenUseCase,
+    private readonly tokenBlacklistService: TokenBlacklistService,
+    private readonly jwtService: JwtService,
+  ) {}
+
+  @ApiOperation({ summary: 'Đăng ký tài khoản' })
+  @ApiResponse({ status: 201, description: 'Đăng ký thành công', type: AuthResponseDto })
+  // POST /auth/register — tạo account + trả về JWT. Public route.
+  @Post('register')
+  async register(@Body() dto: RegisterDto): Promise<AuthResponseDto> {
+    const result = await this.registerUserUseCase.execute({
+      email: dto.email,
+      password: dto.password,
+      username: dto.username,
+    });
+    return AuthMapper.toAuthResponse(result);
+  }
+
+  @ApiOperation({ summary: 'Đăng nhập, trả về JWT' })
+  @ApiResponse({ status: 200, description: 'Đăng nhập thành công, trả về access_token', type: AuthResponseDto })
+  @ApiResponse({ status: 401, description: 'Sai email hoặc mật khẩu' })
+  @HttpCode(HttpStatus.OK)
+  // POST /auth/login — đăng nhập bằng email + password, trả JWT.
+  @Post('login')
+  async login(@Body() dto: LoginDto): Promise<AuthResponseDto> {
+    const result = await this.loginUserUseCase.execute({ email: dto.email, password: dto.password });
+    return AuthMapper.toAuthResponse(result);
+  }
+
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Lấy thông tin profile' })
+  @ApiResponse({ status: 200, type: ProfileResponseDto })
+  @UseGuards(JwtAuthGuard)
+  // GET /auth/profile — query user từ DB (để có avatar/thumbnail). roles lấy từ JWT payload.
+  @Get('profile')
+  async getProfile(
+    @CurrentUser('userId') userId: string,
+    @CurrentUser('roles') roles?: string[],
+  ): Promise<ProfileResponseDto> {
+    const result = await this.getProfileUseCase.execute(userId);
+    return AuthMapper.toProfileResponse(result, roles);
+  }
+
+  @ApiOperation({ summary: 'Cấp lại cặp access/refresh token từ refresh token' })
+  @ApiResponse({ status: 200, type: AuthResponseDto })
+  @ApiResponse({ status: 401, description: 'Refresh token không hợp lệ hoặc đã hết hạn/revoke' })
+  @HttpCode(HttpStatus.OK)
+  // POST /auth/refresh — verify + rotate refresh token. Trả về cặp token mới;
+  // refresh token cũ bị revoke sau call này.
+  @Post('refresh')
+  async refresh(@Body() dto: RefreshTokenDto): Promise<AuthResponseDto> {
+    const result = await this.refreshTokensUseCase.execute({ refreshToken: dto.refresh_token });
+    return AuthMapper.toAuthResponse(result);
+  }
+
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Đăng xuất, vô hiệu hóa access + refresh token' })
+  @ApiResponse({ status: 200, type: LogoutResponseDto })
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  // POST /auth/logout — blacklist access token + revoke refresh token (nếu có trong body).
+  @Post('logout')
+  async logout(@Request() req, @Body() dto: RefreshTokenDto): Promise<LogoutResponseDto> {
+    const authHeader = req.headers?.authorization as string | undefined;
+    const token = authHeader?.split(' ')[1];
+    if (token) {
+      const decoded = this.jwtService.decode(token) as { exp?: number } | null;
+      const expiresAtMs = decoded?.exp ? decoded.exp * 1000 : Date.now() + 24 * 60 * 60 * 1000;
+      await this.tokenBlacklistService.add(token, expiresAtMs);
+    }
+    await this.revokeRefreshTokenUseCase.execute({ refreshToken: dto.refresh_token });
+    return { message: 'Logged out successfully' };
+  }
+
+}

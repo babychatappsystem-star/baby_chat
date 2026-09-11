@@ -1,0 +1,22 @@
+# BMad output artifacts (generated, not source)
+_bmad-output/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Environment files (chứa secrets)
+.env
+.env.local
+.env.*.local
+
+# Node
+node_modules/
+
+# Build
+dist/
+build/

@@ -17,6 +17,8 @@ import {
   GetMessagesByPageUseCase,
   GetPageListUseCase,
 } from 'src/modules/conversation/application/use-cases/get-conversation.usecase';
+import { AddReactionUseCase } from 'src/modules/conversation/application/use-cases/add-reaction.usecase';
+import { RemoveReactionUseCase } from 'src/modules/conversation/application/use-cases/remove-reaction.usecase';
 import { FileModule } from 'src/modules/file/interfaces/file.module';
 
 @Module({
@@ -40,6 +42,8 @@ import { FileModule } from 'src/modules/file/interfaces/file.module';
     GetConversationByIdUseCase,
     GetMessagesByPageUseCase,
     GetPageListUseCase,
+    AddReactionUseCase,
+    RemoveReactionUseCase,
   ],
   exports: [IConversationRepository, CreateConversationUseCase],
 })

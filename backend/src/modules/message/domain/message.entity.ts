@@ -13,6 +13,7 @@ export interface CreateMessageProps {
   replyId?: string;
   replySnippet?: string;
   replySenderId?: string;
+  reactions?: Array<{ userId: string; emoji: string }>;
 }
 
 export class MessageEntity {
@@ -26,6 +27,7 @@ export class MessageEntity {
   readonly replyId?: string;
   readonly replySnippet?: string;
   readonly replySenderId?: string;
+  readonly reactions: Array<{ userId: string; emoji: string }>;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 
@@ -38,6 +40,7 @@ export class MessageEntity {
     replyId?: string;
     replySnippet?: string;
     replySenderId?: string;
+    reactions: Array<{ userId: string; emoji: string }>;
     createdAt: Date;
     updatedAt: Date;
   }) {
@@ -49,6 +52,7 @@ export class MessageEntity {
     this.replyId = props.replyId;
     this.replySnippet = props.replySnippet;
     this.replySenderId = props.replySenderId;
+    this.reactions = props.reactions;
     this.createdAt = props.createdAt;
     this.updatedAt = props.updatedAt;
   }
@@ -88,6 +92,7 @@ export class MessageEntity {
       replyId: props.replyId,
       replySnippet: props.replySnippet?.slice(0, REPLY_SNIPPET_MAX_LENGTH),
       replySenderId: props.replySenderId,
+      reactions: props.reactions ?? [],
       createdAt: now,
       updatedAt: now,
     });
@@ -103,10 +108,26 @@ export class MessageEntity {
     replyId?: string;
     replySnippet?: string;
     replySenderId?: string;
+    reactions?: Array<{ userId: string; emoji: string }>;
     createdAt: Date;
     updatedAt: Date;
   }): MessageEntity {
     // Data cũ không có type → default 'text'.
-    return new MessageEntity({ ...props, type: props.type ?? 'text' });
+    return new MessageEntity({ ...props, type: props.type ?? 'text', reactions: props.reactions ?? [] });
+  }
+
+  addReaction(userId: string, emoji: string): boolean {
+    const exists = this.reactions.some((r) => r.userId === userId && r.emoji === emoji);
+    if (exists) return false;
+    this.reactions.push({ userId, emoji });
+    // Note: domain event will be handled by UseCase manually if not using an aggregate root event queue.
+    return true;
+  }
+
+  removeReaction(userId: string, emoji: string): boolean {
+    const idx = this.reactions.findIndex((r) => r.userId === userId && r.emoji === emoji);
+    if (idx === -1) return false;
+    this.reactions.splice(idx, 1);
+    return true;
   }
 }

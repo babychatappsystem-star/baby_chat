@@ -10,6 +10,7 @@ export abstract class IPageRepository {
   abstract getMessagesByPageNumber(conversationId: string, pageNumber: number): Promise<MessageEntity[]>;
   // Tìm 1 message subdoc theo (conversationId, messageId). Dùng cho lookup reply.
   abstract findMessageById(conversationId: string, messageId: string): Promise<MessageEntity | null>;
+  abstract updateMessageReactions(conversationId: string, messageId: string, reactions: { userId: string, emoji: string }[]): Promise<void>;
 }
 
 export const PAGE_REPOSITORY = IPageRepository;

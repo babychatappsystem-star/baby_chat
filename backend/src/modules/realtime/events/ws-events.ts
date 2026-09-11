@@ -6,6 +6,7 @@ export const WS_EVENTS = {
   FRIENDSHIP_REQUEST_RECEIVED: 'friendship.request_received',
   FRIENDSHIP_ACCEPTED: 'friendship.accepted',
   CONVERSATION_CREATED: 'conversation.created',
+  REACTION_UPDATED: 'reaction.updated',
 } as const;
 
 export type WsEventName = (typeof WS_EVENTS)[keyof typeof WS_EVENTS];
@@ -45,4 +46,12 @@ export interface ConversationCreatedPayload {
   conversationId: string;
   type: string; // 'direct' | 'group' | 'channel'
   participants: Array<{ userId: string; username: string }>;
+}
+
+export interface ReactionUpdatedPayload {
+  messageId: string;
+  conversationId: string;
+  emoji: string;
+  userId: string;
+  action: 'add' | 'remove';
 }

@@ -6,6 +6,7 @@ export const WS_EVENTS = {
   FRIENDSHIP_REQUEST_RECEIVED: 'friendship.request_received',
   FRIENDSHIP_ACCEPTED: 'friendship.accepted',
   CONVERSATION_CREATED: 'conversation.created',
+  REACTION_UPDATED: 'reaction.updated',
 } as const;
 
 export interface MessageNewPayload {
@@ -37,12 +38,21 @@ export interface ConversationCreatedPayload {
   participants: Array<{ userId: string; username: string }>;
 }
 
+export interface ReactionUpdatedPayload {
+  messageId: string;
+  conversationId: string;
+  emoji: string;
+  userId: string;
+  action: 'add' | 'remove';
+}
+
 // Typed socket interface — IDE autocomplete event name + payload.
 export interface ServerToClientEvents {
   'message.new': (p: MessageNewPayload) => void;
   'friendship.request_received': (p: FriendshipRequestReceivedPayload) => void;
   'friendship.accepted': (p: FriendshipAcceptedPayload) => void;
   'conversation.created': (p: ConversationCreatedPayload) => void;
+  'reaction.updated': (p: ReactionUpdatedPayload) => void;
 }
 
 // Hiện chưa có client-to-server event nào.

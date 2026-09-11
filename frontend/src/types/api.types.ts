@@ -84,6 +84,7 @@ export interface MessageDTO {
   replyId?: string;
   replySnippet?: string;
   replySenderId?: string;
+  reactions?: Array<{ userId: string; emoji: string }>;
   createdAt?: string;
   updatedAt?: string;
 }

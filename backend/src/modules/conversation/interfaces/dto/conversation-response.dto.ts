@@ -127,4 +127,10 @@ export class MessageResponseDto {
 
   @ApiProperty({ example: '2026-05-23T10:00:00.000Z' })
   updatedAt: Date;
+
+  @ApiPropertyOptional({
+    example: [{ userId: '64a1b2c3d4e5f6a7b8c9d0e2', emoji: '👍' }],
+    description: 'Danh sách reactions của tin nhắn',
+  })
+  reactions?: { userId: string; emoji: string }[];
 }

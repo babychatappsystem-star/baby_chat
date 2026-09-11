@@ -16,6 +16,7 @@ import {
   FriendshipAcceptedPayload,
   FriendshipRequestReceivedPayload,
   MessageNewPayload,
+  ReactionUpdatedPayload,
   WS_EVENTS,
 } from '../events/ws-events';
 
@@ -114,5 +115,9 @@ export class ChatGateway
       }
       this.server.to(userRoom(uid)).emit(WS_EVENTS.CONVERSATION_CREATED, payload);
     }
+  }
+
+  emitReactionUpdated(conversationId: string, payload: ReactionUpdatedPayload): void {
+    this.server.to(convRoom(conversationId)).emit(WS_EVENTS.REACTION_UPDATED, payload);
   }
 }

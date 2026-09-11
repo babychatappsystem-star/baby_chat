@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Phone, Video, MoreVertical, Smile, Paperclip, MessageCircle } from 'lucide-react';
-import { Input, Button, Badge, Avatar, Tooltip, Typography, Space, Spin } from 'antd';
+import { Input, Button, Badge, Avatar, Tooltip, Typography, Space, Spin, Popover } from 'antd';
+import EmojiPicker, { type EmojiClickData } from 'emoji-picker-react';
 import { SearchOutlined, SendOutlined, TeamOutlined, UserOutlined } from '@ant-design/icons';
 import { conversationService } from '../services/conversationService';
 import { authService } from '../services/authService';
@@ -30,6 +31,7 @@ interface IMessage {
   senderName?: string;
   text: string;
   timestamp: string;
+  reactions: Array<{ userId: string; emoji: string }>;
 }
 
 const formatTime = (iso?: string): string =>
@@ -49,6 +51,7 @@ const mapMessage = (msg: MessageDTO, currentUserId: string): IMessage => ({
   sender: msg.senderId && msg.senderId === currentUserId ? 'me' : msg.senderId ?? 'unknown',
   text: msg.content,
   timestamp: formatTime(msg.createdAt),
+  reactions: msg.reactions ?? [],
 });
 
 // ── Empty state khi chưa có tin nhắn ──
@@ -174,9 +177,67 @@ const MessagesPage: React.FC = () => {
         sender: payload.senderId === currentUserId ? 'me' : payload.senderId,
         text: payload.content,
         timestamp: formatTime(payload.createdAt),
+        reactions: [],
       },
     ]);
   });
+
+  useSocketEvent(WS_EVENTS.REACTION_UPDATED, (payload) => {
+    if (payload.conversationId !== selectedConversation?.id) return;
+    setMessages((prev) =>
+      prev.map((m) => {
+        if (m.id !== payload.messageId) return m;
+        const newReactions = [...m.reactions];
+        if (payload.action === 'add') {
+          if (!newReactions.some((r) => r.userId === payload.userId && r.emoji === payload.emoji)) {
+            newReactions.push({ userId: payload.userId, emoji: payload.emoji });
+          }
+        } else {
+          const idx = newReactions.findIndex((r) => r.userId === payload.userId && r.emoji === payload.emoji);
+          if (idx !== -1) newReactions.splice(idx, 1);
+        }
+        return { ...m, reactions: newReactions };
+      })
+    );
+  });
+
+  const handleReact = async (messageId: string, emoji: string) => {
+    if (!selectedConversation) return;
+    const conversationId = selectedConversation.id;
+
+    const message = messages.find((m) => m.id === messageId);
+    if (!message) return;
+
+    const hasReacted = message.reactions.some(
+      (r) => r.userId === currentUserId && r.emoji === emoji
+    );
+
+    // Optimistic Update
+    setMessages((prev) =>
+      prev.map((m) => {
+        if (m.id !== messageId) return m;
+        const newReactions = [...m.reactions];
+        if (hasReacted) {
+          const idx = newReactions.findIndex((r) => r.userId === currentUserId && r.emoji === emoji);
+          if (idx !== -1) newReactions.splice(idx, 1);
+        } else {
+          newReactions.push({ userId: currentUserId, emoji });
+        }
+        return { ...m, reactions: newReactions };
+      })
+    );
+
+    try {
+      if (hasReacted) {
+        await conversationService.removeReaction(conversationId, messageId, emoji);
+      } else {
+        await conversationService.addReaction(conversationId, messageId, emoji);
+      }
+    } catch (err) {
+      console.error('Failed to update reaction', err);
+      // Rollback on failure could be implemented here
+    }
+  };
 
   const handleSendMessage = async (e?: React.FormEvent<HTMLFormElement>) => {
     e?.preventDefault();
@@ -349,9 +410,16 @@ const MessagesPage: React.FC = () => {
               const prevMsg = messages[i - 1];
               const showAvatar = !isMe && (prevMsg?.sender !== msg.sender);
 
+              // Group reactions by emoji
+              const groupedReactions = msg.reactions.reduce((acc, r) => {
+                acc[r.emoji] = [...(acc[r.emoji] ?? []), r.userId];
+                return acc;
+              }, {} as Record<string, string[]>);
+
               return (
+                <React.Fragment key={msg.id}>
                 <div
-                  key={msg.id}
+                  className="message-row"
                   style={{
                     display: 'flex',
                     marginBottom: prevMsg?.sender !== msg.sender ? 12 : 4,
@@ -360,6 +428,13 @@ const MessagesPage: React.FC = () => {
                     gap: 8,
                   }}
                 >
+                  <style>
+                    {`
+                      .message-row:hover .message-actions {
+                        opacity: 1 !important;
+                      }
+                    `}
+                  </style>
                   {/* Avatar người gửi (chỉ hiện ở tin đầu của chuỗi) */}
                   {!isMe && (
                     <div style={{ width: 32, flexShrink: 0 }}>
@@ -404,7 +479,82 @@ const MessagesPage: React.FC = () => {
                       {msg.timestamp}
                     </Text>
                   </div>
+                  
+                  {/* Hover action to show emoji picker */}
+                  <div
+                    className="message-actions"
+                    style={{
+                      opacity: 0,
+                      transition: 'opacity 0.2s',
+                      alignSelf: 'center',
+                    }}
+                  >
+                    <Popover
+                      content={
+                        <EmojiPicker
+                          onEmojiClick={(emojiData: EmojiClickData) => handleReact(msg.id, emojiData.emoji)}
+                          width={300}
+                          height={400}
+                        />
+                      }
+                      trigger="click"
+                      placement={isMe ? 'left' : 'right'}
+                    >
+                      <Button
+                        type="text"
+                        shape="circle"
+                        icon={<Smile size={16} />}
+                        style={{ color: token.colorTextSecondary }}
+                      />
+                    </Popover>
+                  </div>
                 </div>
+                
+                {/* Reactions Display (below message bubble) */}
+                {Object.keys(groupedReactions).length > 0 && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: isMe ? 'flex-end' : 'flex-start',
+                      marginTop: -10,
+                      marginBottom: 8,
+                      marginLeft: isMe ? 0 : 40,
+                      marginRight: isMe ? 40 : 0,
+                      gap: 4,
+                      zIndex: 1,
+                      position: 'relative',
+                    }}
+                  >
+                    {Object.entries(groupedReactions).map(([emoji, userIds]) => {
+                      const iReacted = userIds.includes(currentUserId);
+                      return (
+                        <Tooltip key={emoji} title={userIds.length + ' reactions'}>
+                          <div
+                            onClick={() => handleReact(msg.id, emoji)}
+                            style={{
+                              padding: '2px 6px',
+                              borderRadius: 12,
+                              background: iReacted ? token.colorPrimaryBg : token.colorBgContainer,
+                              border: `1px solid ${iReacted ? token.colorPrimary : token.colorBorderSecondary}`,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              fontSize: 12,
+                              boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                            }}
+                          >
+                            <span>{emoji}</span>
+                            <span style={{ color: iReacted ? token.colorPrimary : token.colorTextSecondary, fontWeight: iReacted ? 600 : 'normal' }}>
+                              {userIds.length}
+                            </span>
+                          </div>
+                        </Tooltip>
+                      );
+                    })}
+                  </div>
+                )}
+                </React.Fragment>
               );
             })
           )}

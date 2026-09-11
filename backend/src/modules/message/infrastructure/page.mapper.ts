@@ -19,6 +19,10 @@ export class PageMapper {
         replyId: m.replyId?.toString(),
         replySnippet: m.replySnippet,
         replySenderId: m.replySenderId?.toString(),
+        reactions: (m.reactions ?? []).map((r) => ({
+          userId: r.userId.toString(),
+          emoji: r.emoji,
+        })),
         createdAt: m.createdAt,
         updatedAt: m.updatedAt,
       }),
@@ -56,6 +60,10 @@ export class PageMapper {
         replyId: m.replyId ? toObjectId(m.replyId) : null,
         replySnippet: m.replySnippet,
         replySenderId: m.replySenderId ? toObjectId(m.replySenderId) : undefined,
+        reactions: m.reactions.map((r) => ({
+          userId: toObjectId(r.userId),
+          emoji: r.emoji,
+        })),
         createdAt: m.createdAt,
         updatedAt: m.updatedAt,
       })),

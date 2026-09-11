@@ -40,4 +40,12 @@ export const conversationService = {
   async sendMessage(payload: SendMessagePayload): Promise<void> {
     await apiClient.post('/conversations/messages', payload);
   },
+
+  async addReaction(conversationId: string, messageId: string, emoji: string): Promise<void> {
+    await apiClient.post(`/conversations/${conversationId}/messages/${messageId}/reactions`, { emoji });
+  },
+
+  async removeReaction(conversationId: string, messageId: string, emoji: string): Promise<void> {
+    await apiClient.delete(`/conversations/${conversationId}/messages/${messageId}/reactions`, { data: { emoji } });
+  },
 };

@@ -7,6 +7,7 @@ import { IPageRepository } from 'src/modules/message/domain/i-page.repository';
 import { ConversationCreatedEvent } from 'src/modules/conversation/domain/conversation-created.event';
 import { FriendRequestSentEvent } from 'src/modules/friendship/domain/friend-request-sent.event';
 import { FriendshipAcceptedEvent } from 'src/modules/friendship/domain/friendship-accepted.event';
+import { ReactionUpdatedEvent } from 'src/modules/message/domain/reaction-updated.event';
 import { FileUrlResolver } from 'src/modules/file/application/file-url-resolver.service';
 import { ChatGateway } from '../gateway/chat.gateway';
 
@@ -116,6 +117,24 @@ export class DomainEventsBridge {
     } catch (err) {
       this.logger.error(
         `Failed to broadcast conversation.created for ${event.conversationId}`,
+        err as any,
+      );
+    }
+  }
+
+  @OnEvent('reaction.updated')
+  async onReactionUpdated(event: ReactionUpdatedEvent): Promise<void> {
+    try {
+      this.gateway.emitReactionUpdated(event.conversationId, {
+        messageId: event.messageId,
+        conversationId: event.conversationId,
+        userId: event.userId,
+        emoji: event.emoji,
+        action: event.action,
+      });
+    } catch (err) {
+      this.logger.error(
+        `Failed to broadcast reaction.updated for message ${event.messageId}`,
         err as any,
       );
     }

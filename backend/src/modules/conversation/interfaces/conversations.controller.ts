@@ -13,6 +13,8 @@ import {
   GetMessagesByPageUseCase,
   GetPageListUseCase,
 } from 'src/modules/conversation/application/use-cases/get-conversation.usecase';
+import { AddReactionUseCase } from 'src/modules/conversation/application/use-cases/add-reaction.usecase';
+import { RemoveReactionUseCase } from 'src/modules/conversation/application/use-cases/remove-reaction.usecase';
 import { FileUrlResolver } from 'src/modules/file/application/file-url-resolver.service';
 import { CreateConvDto } from './dto/create-conv.dto';
 import { CreateMessageDto } from 'src/modules/message/interfaces/dto/create-message.dto';
@@ -41,6 +43,8 @@ export class ConversationsController {
     private readonly getConversationByIdUseCase: GetConversationByIdUseCase,
     private readonly getMessagesByPageUseCase: GetMessagesByPageUseCase,
     private readonly getPageListUseCase: GetPageListUseCase,
+    private readonly addReactionUseCase: AddReactionUseCase,
+    private readonly removeReactionUseCase: RemoveReactionUseCase,
     private readonly fileUrlResolver: FileUrlResolver,
   ) {}
 
@@ -193,5 +197,40 @@ export class ConversationsController {
     @CurrentUser('userId') userId: string,
   ): Promise<void> {
     await this.deleteConversationUseCase.execute({ conversationId, userId });
+  }
+
+  @ApiOperation({ summary: 'Thả reaction vào tin nhắn' })
+  @ApiResponse({ status: 201 })
+  @Post(':conversationId/messages/:messageId/reactions')
+  async addReaction(
+    @Param('conversationId') conversationId: string,
+    @Param('messageId') messageId: string,
+    @CurrentUser('userId') userId: string,
+    @Body() body: { emoji: string },
+  ): Promise<void> {
+    await this.addReactionUseCase.execute({
+      conversationId,
+      messageId,
+      userId,
+      emoji: body.emoji,
+    });
+  }
+
+  @ApiOperation({ summary: 'Bỏ reaction khỏi tin nhắn' })
+  @ApiResponse({ status: 204 })
+  @HttpCode(204)
+  @Delete(':conversationId/messages/:messageId/reactions')
+  async removeReaction(
+    @Param('conversationId') conversationId: string,
+    @Param('messageId') messageId: string,
+    @CurrentUser('userId') userId: string,
+    @Body() body: { emoji: string },
+  ): Promise<void> {
+    await this.removeReactionUseCase.execute({
+      conversationId,
+      messageId,
+      userId,
+      emoji: body.emoji,
+    });
   }
 }

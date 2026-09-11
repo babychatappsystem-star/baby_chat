@@ -38,6 +38,17 @@ class MessageSubdoc {
 
   @Prop({ default: Date.now })
   declare updatedAt: Date;
+
+  @Prop({
+    type: [
+      {
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+        emoji: { type: String, required: true },
+      },
+    ],
+    default: [],
+  })
+  declare reactions: { userId: mongoose.Types.ObjectId; emoji: string }[];
 }
 
 @Schema({ timestamps: true, collection: 'pages' })

@@ -63,6 +63,7 @@ export class ConversationResponseMapper {
       replyId: entity.replyId,
       replySnippet: entity.replySnippet,
       replySenderId: entity.replySenderId,
+      reactions: entity.reactions.map((r) => ({ userId: r.userId, emoji: r.emoji })),
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
     };

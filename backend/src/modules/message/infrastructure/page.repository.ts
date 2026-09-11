@@ -114,4 +114,26 @@ export class PageRepository implements IPageRepository {
     const page = PageMapper.toDomain(doc);
     return page.messages.find((m) => m.id === messageId) ?? null;
   }
+
+  async updateMessageReactions(
+    conversationId: string,
+    messageId: string,
+    reactions: { userId: string; emoji: string }[],
+  ): Promise<void> {
+    const msgObjectId = new mongoose.Types.ObjectId(messageId);
+    await this.pageModel.updateOne(
+      {
+        conversationId: new mongoose.Types.ObjectId(conversationId),
+        'messages._id': msgObjectId,
+      },
+      {
+        $set: {
+          'messages.$.reactions': reactions.map((r) => ({
+            userId: new mongoose.Types.ObjectId(r.userId),
+            emoji: r.emoji,
+          })),
+        },
+      },
+    );
+  }
 }

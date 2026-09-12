@@ -30,11 +30,14 @@ const Dashboard: React.FC = () => (
 );
 
 const App: React.FC = () => {
-  const [isDark, setIsDark] = useState(
-    () => document.documentElement.classList.contains('dark')
-  );
+  const [isDark, setIsDark] = useState(() => {
+    const saved = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return saved === 'dark' || (!saved && prefersDark);
+  });
 
   useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDark);
     const observer = new MutationObserver(() => {
       setIsDark(document.documentElement.classList.contains('dark'));
     });

@@ -40,11 +40,7 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
   const { notifications, unreadCount, markAllRead, clearAll } = useNotifications();
 
   useEffect(() => {
-    const saved = localStorage.getItem('theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const dark = saved === 'dark' || (!saved && prefersDark);
-    setIsDarkMode(dark);
-    document.documentElement.classList.toggle('dark', dark);
+    setIsDarkMode(document.documentElement.classList.contains('dark'));
   }, []);
 
   useEffect(() => {

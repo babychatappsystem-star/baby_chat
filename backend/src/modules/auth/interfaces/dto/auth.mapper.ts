@@ -29,6 +29,7 @@ export class AuthMapper {
       username: result.user.username,
       avatarUrl: result.avatarUrl,
       thumbnailUrl: result.thumbnailUrl,
+      hidePresence: result.user.hidePresence,
       roles,
     };
   }

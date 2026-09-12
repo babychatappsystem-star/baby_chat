@@ -16,6 +16,8 @@ export class UserEntity {
   readonly createdAt: Date;
   readonly friendCode?: string;
   readonly avatarFileId?: string;
+  readonly lastSeenAt?: Date;
+  readonly hidePresence: boolean;
 
   private constructor(props: {
     id?: string;
@@ -27,6 +29,8 @@ export class UserEntity {
     createdAt: Date;
     friendCode?: string;
     avatarFileId?: string;
+    lastSeenAt?: Date;
+    hidePresence?: boolean;
   }) {
     this.id = props.id;
     this.username = props.username;
@@ -37,6 +41,8 @@ export class UserEntity {
     this.createdAt = props.createdAt;
     this.friendCode = props.friendCode;
     this.avatarFileId = props.avatarFileId;
+    this.lastSeenAt = props.lastSeenAt;
+    this.hidePresence = props.hidePresence ?? false;
   }
 
   // Tạo user MỚI. Password phải đã được hash trước khi truyền vào (hash ở use case).
@@ -74,6 +80,8 @@ export class UserEntity {
     createdAt: Date;
     friendCode?: string;
     avatarFileId?: string;
+    lastSeenAt?: Date;
+    hidePresence?: boolean;
   }): UserEntity {
     return new UserEntity(props);
   }

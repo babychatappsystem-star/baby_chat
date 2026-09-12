@@ -88,4 +88,19 @@ export class FriendshipRepository implements IFriendshipRepository {
   async delete(id: string): Promise<void> {
     await this.model.deleteOne({ _id: id });
   }
+
+  // Trả danh sách userId của bạn bè đã accepted. Query cả 2 chiều, extract ID đầu kia.
+  async getFriendIds(userId: string): Promise<string[]> {
+    const uid = new mongoose.Types.ObjectId(userId);
+    const docs = await this.model.find({
+      status: FriendshipStatus.Accepted,
+      $or: [{ requesterId: uid }, { recipientId: uid }],
+    }).select('requesterId recipientId').lean();
+
+    return docs.map((d) => {
+      const reqId = d.requesterId.toString();
+      const recId = d.recipientId.toString();
+      return reqId === userId ? recId : reqId;
+    });
+  }
 }

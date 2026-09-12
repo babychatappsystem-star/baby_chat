@@ -18,6 +18,7 @@ import { useSocketEvent } from './hooks/useSocketEvent';
 import { WS_EVENTS } from './lib/wsEvents';
 import { playNotificationSound } from './lib/sound';
 import { Toaster } from 'react-hot-toast';
+import { PresenceProvider } from './contexts/PresenceContext';
 
 // Example page components
 
@@ -82,6 +83,7 @@ const App: React.FC = () => {
       }}
     >
     <AntdApp>
+    <PresenceProvider>
     <div className="App">
       <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Routes>
@@ -209,6 +211,7 @@ const App: React.FC = () => {
         }}
       />
     </div>
+    </PresenceProvider>
     </AntdApp>
     </ConfigProvider>
   );

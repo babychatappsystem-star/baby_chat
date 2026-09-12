@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { UsersController } from './users.controller';
 import { UserDocument, UserSchema } from 'src/modules/user/infrastructure/user.schema';
@@ -14,12 +14,16 @@ import { RegenerateFriendCodeUseCase } from 'src/modules/user/application/use-ca
 import { GetUserByFriendCodeUseCase } from 'src/modules/user/application/use-cases/get-user-by-friend-code.usecase';
 import { UpdateUserAvatarUseCase } from 'src/modules/user/application/use-cases/update-user-avatar.usecase';
 import { GetProfileUseCase } from 'src/modules/user/application/use-cases/get-profile.usecase';
+import { UpdatePresenceSettingsUseCase } from 'src/modules/user/application/use-cases/update-presence-settings.usecase';
+import { GetFriendsPresenceUseCase } from 'src/modules/user/application/use-cases/get-friends-presence.usecase';
 import { FileModule } from 'src/modules/file/interfaces/file.module';
+import { FriendshipModule } from 'src/modules/friendship/interfaces/friendship.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: UserDocument.name, schema: UserSchema }]),
     FileModule,
+    forwardRef(() => FriendshipModule),
   ],
   controllers: [UsersController],
   providers: [
@@ -32,6 +36,8 @@ import { FileModule } from 'src/modules/file/interfaces/file.module';
     GetUserByFriendCodeUseCase,
     UpdateUserAvatarUseCase,
     GetProfileUseCase,
+    UpdatePresenceSettingsUseCase,
+    GetFriendsPresenceUseCase,
   ],
   // GetProfileUseCase export để AuthController dùng cho GET /auth/profile.
   exports: [IUserRepository, GetProfileUseCase],

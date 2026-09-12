@@ -14,6 +14,10 @@ export abstract class IUserRepository {
   abstract delete(id: string): Promise<void>;
   abstract findAll(): Promise<UserEntity[]>;
   abstract findPaginated(page: number, limit: number): Promise<{ items: UserEntity[]; total: number }>;
+  // Ghi thời điểm user ngắt kết nối cuối cùng. Không throw nếu userId không tồn tại.
+  abstract updateLastSeen(userId: string, date: Date): Promise<void>;
+  // Toggle ẩn trạng thái. Caller chịu trách nhiệm emit WS event sau khi gọi.
+  abstract updateHidePresence(userId: string, hide: boolean): Promise<void>;
 }
 
 export const USER_REPOSITORY = IUserRepository;

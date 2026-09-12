@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConversationsController } from './conversations.controller';
 import { ConversationDocument, ConversationSchema } from 'src/modules/conversation/infrastructure/conversation.schema';
@@ -26,7 +26,7 @@ import { FileModule } from 'src/modules/file/interfaces/file.module';
     MongooseModule.forFeature([
       { name: ConversationDocument.name, schema: ConversationSchema },
     ]),
-    UserModule,
+    forwardRef(() => UserModule),
     PageModule,
     FileModule,
   ],

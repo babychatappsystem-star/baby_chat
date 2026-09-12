@@ -7,12 +7,15 @@ import { GetOrCreateFriendCodeUseCase } from 'src/modules/user/application/use-c
 import { RegenerateFriendCodeUseCase } from 'src/modules/user/application/use-cases/regenerate-friend-code.usecase';
 import { GetUserByFriendCodeUseCase } from 'src/modules/user/application/use-cases/get-user-by-friend-code.usecase';
 import { UpdateUserAvatarUseCase } from 'src/modules/user/application/use-cases/update-user-avatar.usecase';
+import { UpdatePresenceSettingsUseCase } from 'src/modules/user/application/use-cases/update-presence-settings.usecase';
+import { GetFriendsPresenceUseCase } from 'src/modules/user/application/use-cases/get-friends-presence.usecase';
 import { FileUrlResolver } from 'src/modules/file/application/file-url-resolver.service';
 
 import { UpdateAvatarDto } from './dto/update-avatar.dto';
 import { UserPublicDto } from './dto/user-public.dto';
 import { FriendCodeResponseDto } from './dto/friend-code.dto';
 import { PaginationQueryDto, PaginatedUsersResponseDto } from './dto/pagination.dto';
+import { UpdatePresenceSettingsDto, FriendPresenceItemDto } from './dto/presence.dto';
 
 // Controller cho các endpoint quản lý user. POST /users public, các endpoint khác cần JWT.
 @ApiTags('users')
@@ -28,6 +31,8 @@ export class UsersController {
     private readonly getUserByFriendCodeUseCase: GetUserByFriendCodeUseCase,
     private readonly updateUserAvatarUseCase: UpdateUserAvatarUseCase,
     private readonly fileUrlResolver: FileUrlResolver,
+    private readonly updatePresenceSettingsUseCase: UpdatePresenceSettingsUseCase,
+    private readonly getFriendsPresenceUseCase: GetFriendsPresenceUseCase,
   ) {}
 
 
@@ -137,5 +142,31 @@ export class UsersController {
       requesterId: currentUserId,
       roles,
     });
+  }
+
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Cập nhật cài đặt trạng thái hoạt động (ẩn/hiện)' })
+  @ApiResponse({ status: 200 })
+  // PATCH /users/me/presence — toggle hidePresence; gateway tự emit WS event đến bạn bè.
+  @Patch('me/presence')
+  async updateMyPresenceSettings(
+    @CurrentUser('userId') userId: string,
+    @Body() dto: UpdatePresenceSettingsDto,
+  ): Promise<{ hidePresence: boolean }> {
+    await this.updatePresenceSettingsUseCase.execute(userId, dto.hidePresence);
+    return { hidePresence: dto.hidePresence };
+  }
+
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Lấy trạng thái online của tất cả bạn bè (bootstrap khi mở app)' })
+  @ApiResponse({ status: 200, type: [FriendPresenceItemDto] })
+  // GET /users/me/friends/presence — FE dùng để bootstrap PresenceContext khi mở app.
+  @Get('me/friends/presence')
+  async getMyFriendsPresence(
+    @CurrentUser('userId') userId: string,
+  ): Promise<FriendPresenceItemDto[]> {
+    return this.getFriendsPresenceUseCase.execute(userId);
   }
 }

@@ -19,6 +19,9 @@ export abstract class IFriendshipRepository {
   // Check user A đã chặn user B chưa (B = recipient của block của A).
   abstract isBlockedBy(blockerId: string, blockedId: string): Promise<boolean>;
 
+  // Lấy danh sách userId của bạn bè đã accept. Dùng để broadcast presence event.
+  abstract getFriendIds(userId: string): Promise<string[]>;
+
   abstract save(entity: FriendshipEntity): Promise<FriendshipEntity>;
   abstract update(entity: FriendshipEntity): Promise<FriendshipEntity>;
   abstract delete(id: string): Promise<void>;

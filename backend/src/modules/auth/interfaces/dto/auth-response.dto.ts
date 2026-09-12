@@ -53,6 +53,9 @@ export class ProfileResponseDto {
   @ApiPropertyOptional({ example: '/uploads/thumb_abc.webp', description: 'URL thumbnail avatar (null nếu chưa đặt)' })
   thumbnailUrl?: string | null;
 
+  @ApiProperty({ example: false })
+  hidePresence: boolean;
+
   @ApiProperty({ example: ['user'], required: false, type: [String] })
   roles?: string[];
 }

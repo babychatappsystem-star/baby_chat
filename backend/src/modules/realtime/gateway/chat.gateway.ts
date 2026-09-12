@@ -9,8 +9,11 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { IConversationRepository } from 'src/modules/conversation/domain/i-conversation.repository';
+import { IUserRepository } from 'src/modules/user/domain/i-user.repository';
+import { IFriendshipRepository } from 'src/modules/friendship/domain/i-friendship.repository';
 import { TokenBlacklistService } from 'src/modules/auth/infrastructure/token-blacklist.service';
 import { createWsJwtMiddleware, SocketDataShape } from '../auth/ws-jwt.middleware';
+import { PresenceService } from '../presence/presence.service';
 import {
   ConversationCreatedPayload,
   FriendshipAcceptedPayload,
@@ -39,6 +42,11 @@ export class ChatGateway
     private readonly tokenBlacklist: TokenBlacklistService,
     @Inject(IConversationRepository)
     private readonly conversationRepository: IConversationRepository,
+    @Inject(IUserRepository)
+    private readonly userRepository: IUserRepository,
+    @Inject(IFriendshipRepository)
+    private readonly friendshipRepository: IFriendshipRepository,
+    private readonly presenceService: PresenceService,
   ) {}
 
   onModuleInit() {
@@ -52,6 +60,7 @@ export class ChatGateway
   }
 
   // Sau khi auth pass: join user room + tất cả conversation room của user.
+  // Nếu đây là kết nối đầu tiên (isFirstConnection), emit presence.online đến bạn bè.
   async handleConnection(socket: Socket) {
     const data = socket.data as SocketDataShape;
     const user = data.user;
@@ -70,14 +79,64 @@ export class ChatGateway
         `User ${user.userId} connected (${socket.id}), joined ${conversations.length} conversations`,
       );
     } catch (err) {
-      // Không kill connection nếu fetch lỗi — user vẫn nhận được notification cá nhân.
       this.logger.error(`Failed to load conversations for ${user.userId}`, err as any);
+    }
+
+    // Presence: ghi nhận kết nối, broadcast nếu vừa online
+    const isFirstConnection = this.presenceService.userJoined(user.userId);
+    if (isFirstConnection) {
+      this.broadcastPresenceOnline(user.userId).catch((err) =>
+        this.logger.error(`Failed to broadcast presence.online for ${user.userId}`, err),
+      );
     }
   }
 
   handleDisconnect(socket: Socket) {
-    // Socket.IO tự rời tất cả room khi disconnect — không cần làm gì thêm.
     this.logger.debug(`Socket disconnected ${socket.id}`);
+
+    const data = socket.data as SocketDataShape;
+    const user = data?.user;
+    if (!user) return;
+
+    // Presence: ghi nhận ngắt kết nối, broadcast nếu vừa offline
+    const isLastConnection = this.presenceService.userLeft(user.userId);
+    if (isLastConnection) {
+      // Ghi lastSeenAt vào DB (fire-and-forget; không block disconnect)
+      const lastSeenAt = new Date();
+      this.userRepository.updateLastSeen(user.userId, lastSeenAt).catch((err) =>
+        this.logger.error(`Failed to update lastSeen for ${user.userId}`, err),
+      );
+      this.broadcastPresenceOffline(user.userId, lastSeenAt).catch((err) =>
+        this.logger.error(`Failed to broadcast presence.offline for ${user.userId}`, err),
+      );
+    }
+  }
+
+  // ─── Presence Broadcast helpers ─────────────────────────────────────────────
+
+  private async broadcastPresenceOnline(userId: string): Promise<void> {
+    // Kiểm tra hidePresence trước khi emit
+    const userEntity = await this.userRepository.findById(userId);
+    if (!userEntity || userEntity.hidePresence) return;
+
+    const friendIds = await this.friendshipRepository.getFriendIds(userId);
+    for (const fid of friendIds) {
+      this.server.to(userRoom(fid)).emit(WS_EVENTS.PRESENCE_ONLINE, { userId });
+    }
+  }
+
+  private async broadcastPresenceOffline(userId: string, lastSeenAt: Date): Promise<void> {
+    // Kiểm tra hidePresence: nếu đang ẩn thì đã emit offline trước rồi, không cần emit lại
+    const userEntity = await this.userRepository.findById(userId);
+    if (userEntity?.hidePresence) return;
+
+    const friendIds = await this.friendshipRepository.getFriendIds(userId);
+    const lastSeenAtStr = lastSeenAt.toISOString();
+    for (const fid of friendIds) {
+      this.server
+        .to(userRoom(fid))
+        .emit(WS_EVENTS.PRESENCE_OFFLINE, { userId, lastSeenAt: lastSeenAtStr });
+    }
   }
 
   // ─── Emit helpers — dùng bởi DomainEventsBridge ─────────────────────────────
@@ -85,8 +144,6 @@ export class ChatGateway
   // Emit tin nhắn mới cho MỌI participant trong conversation, kể cả các thiết bị của
   // chính sender. Contract: WS là nguồn render duy nhất — FE không append từ REST response,
   // chỉ append từ message.new → mỗi tin đến đúng 1 lần, không cần dedupe.
-  // (Trước đây .except(user:sender) loại cả các thiết bị khác của sender → multi-device miss tin — fix #4.)
-  // senderId giữ lại để tham chiếu/tương lai, không dùng để filter nữa.
   emitMessageNew(conversationId: string, _senderId: string, payload: MessageNewPayload): void {
     this.server.to(convRoom(conversationId)).emit(WS_EVENTS.MESSAGE_NEW, payload);
   }

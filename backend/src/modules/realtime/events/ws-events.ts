@@ -7,6 +7,8 @@ export const WS_EVENTS = {
   FRIENDSHIP_ACCEPTED: 'friendship.accepted',
   CONVERSATION_CREATED: 'conversation.created',
   REACTION_UPDATED: 'reaction.updated',
+  PRESENCE_ONLINE: 'presence.online',
+  PRESENCE_OFFLINE: 'presence.offline',
 } as const;
 
 export type WsEventName = (typeof WS_EVENTS)[keyof typeof WS_EVENTS];
@@ -54,4 +56,15 @@ export interface ReactionUpdatedPayload {
   emoji: string;
   userId: string;
   action: 'add' | 'remove';
+}
+
+// user vừa online (không còn offline).
+export interface PresenceOnlinePayload {
+  userId: string;
+}
+
+// user vừa offline. lastSeenAt=null khi user ẩn trạng thái.
+export interface PresenceOfflinePayload {
+  userId: string;
+  lastSeenAt: string | null; // ISO 8601 hoặc null
 }

@@ -97,4 +97,14 @@ export class UserRepository implements IUserRepository {
       total,
     };
   }
+
+  // Ghi lastSeenAt; dùng updateOne (không cần trả document về).
+  async updateLastSeen(userId: string, date: Date): Promise<void> {
+    await this.userModel.updateOne({ _id: userId }, { $set: { lastSeenAt: date } });
+  }
+
+  // Toggle hidePresence; dùng updateOne để tránh load toàn bộ document.
+  async updateHidePresence(userId: string, hide: boolean): Promise<void> {
+    await this.userModel.updateOne({ _id: userId }, { $set: { hidePresence: hide } });
+  }
 }

@@ -10,6 +10,7 @@ import {
   Flex,
   Skeleton,
   Popconfirm,
+  Switch,
 } from 'antd';
 import { useAntdApp } from '../hooks/useAntdApp';
 import {
@@ -22,7 +23,9 @@ import {
   BellOutlined,
   BellFilled,
   CameraOutlined,
+  EyeInvisibleOutlined,
 } from '@ant-design/icons';
+import { updatePresenceSettings } from '../services/presenceService';
 import { isSoundMuted, toggleSound } from '../lib/sound';
 import type { ProfileDTO } from '../types/api.types';
 import { authService } from '../services/authService';
@@ -55,12 +58,17 @@ const ProfilePage: React.FC = () => {
   const [muted, setMuted] = useState(() => isSoundMuted());
 
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [hidePresence, setHidePresence] = useState(false);
+  const [updatingPresence, setUpdatingPresence] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     authService
       .getProfile()
-      .then(setProfile)
+      .then((p) => {
+        setProfile(p);
+        setHidePresence(p.hidePresence ?? false);
+      })
       .catch((err) => message.error(getFriendErrorMessage(err, 'Không tải được thông tin tài khoản')))
       .finally(() => setLoadingProfile(false));
 
@@ -119,6 +127,19 @@ const ProfilePage: React.FC = () => {
       message.error(getFileErrorMessage(err, 'Cập nhật ảnh đại diện thất bại'));
     } finally {
       setUploadingAvatar(false);
+    }
+  };
+
+  const handleToggleHidePresence = async (checked: boolean) => {
+    setUpdatingPresence(true);
+    try {
+      await updatePresenceSettings(checked);
+      setHidePresence(checked);
+      message.success(checked ? 'Đã bật ẩn trạng thái' : 'Đã tắt ẩn trạng thái');
+    } catch (err) {
+      message.error('Không thể cập nhật trạng thái');
+    } finally {
+      setUpdatingPresence(false);
     }
   };
 
@@ -240,6 +261,26 @@ const ProfilePage: React.FC = () => {
           >
             {muted ? 'Bật âm thanh' : 'Tắt âm thanh'}
           </Button>
+        </Flex>
+      </Card>
+
+      {/* Trạng thái hoạt động */}
+      <Card style={{ marginBottom: 24 }}>
+        <Flex justify="space-between" align="center">
+          <Space>
+            <EyeInvisibleOutlined style={{ fontSize: 18, color: hidePresence ? token.colorPrimary : token.colorTextPlaceholder }} />
+            <div>
+              <Text strong style={{ display: 'block' }}>Ẩn trạng thái hoạt động</Text>
+              <Text type="secondary" style={{ fontSize: 13 }}>
+                Khi bật, bạn bè sẽ không thấy bạn online
+              </Text>
+            </div>
+          </Space>
+          <Switch
+            checked={hidePresence}
+            onChange={handleToggleHidePresence}
+            loading={updatingPresence}
+          />
         </Flex>
       </Card>
 

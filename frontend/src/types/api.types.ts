@@ -22,6 +22,7 @@ export interface ProfileDTO {
   email: string;
   avatarUrl?: string | null;
   thumbnailUrl?: string | null;
+  hidePresence?: boolean;
 }
 
 // ── Files ──

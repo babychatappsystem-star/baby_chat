@@ -36,6 +36,14 @@ export class UserDocument extends Document {
   // Tham chiếu tới file ảnh avatar (collection 'files'). Resolve → url qua FileUrlResolver.
   @Prop({ required: false })
   declare avatarFileId?: string;
+
+  // Thời gian user ngắt kết nối lần cuối. Ghi khi connectionCount về 0.
+  @Prop({ required: false })
+  declare lastSeenAt?: Date;
+
+  // Ẩn trạng thái hoạt động. Khi true, luôn hiện offline với người khác.
+  @Prop({ default: false })
+  declare hidePresence: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(UserDocument);

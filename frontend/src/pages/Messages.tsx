@@ -10,6 +10,8 @@ import { useThemeToken } from '../hooks/useThemeToken';
 import { useSocketEvent } from '../hooks/useSocketEvent';
 import { useSocketConnect } from '../hooks/useSocketConnect';
 import { WS_EVENTS } from '../lib/wsEvents';
+import { PresenceContext } from '../contexts/PresenceContext';
+import { usePresence } from '../hooks/usePresence';
 
 
 const { Text, Title } = Typography;
@@ -23,6 +25,7 @@ interface IConversation {
   unread: number;
   type: 'direct' | 'group';
   memberCount: number;
+  otherUserId?: string;
 }
 
 interface IMessage {
@@ -99,6 +102,8 @@ const MessagesPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { presenceMap } = React.useContext(PresenceContext);
+  const selectedPresence = usePresence(selectedConversation?.otherUserId);
 
   useEffect(() => {
     authService
@@ -113,16 +118,20 @@ const MessagesPage: React.FC = () => {
   const loadConversations = useCallback(async () => {
     const dtos = await conversationService.getConversations();
     const valid = dtos.filter((conv) => conv.id);
-    const convData: IConversation[] = valid.map((conv) => ({
-      id: conv.id,
-      name: conversationTitle(conv, currentUserId),
-      avatar: conv.avatar || `https://i.pravatar.cc/150?u=${conv.id}`,
-      lastMessage: conv.lastMessage || 'Chưa có tin nhắn',
-      timestamp: formatTime(conv.lastMessageAt || conv.updatedAt),
-      unread: 0,
-      type: conv.type,
-      memberCount: conv.participants.length,
-    }));
+    const convData: IConversation[] = valid.map((conv) => {
+      const other = conv.type === 'direct' ? conv.participants.find((p) => p.userId !== currentUserId) : undefined;
+      return {
+        id: conv.id,
+        name: conversationTitle(conv, currentUserId),
+        avatar: conv.avatar || `https://i.pravatar.cc/150?u=${conv.id}`,
+        lastMessage: conv.lastMessage || 'Chưa có tin nhắn',
+        timestamp: formatTime(conv.lastMessageAt || conv.updatedAt),
+        unread: 0,
+        type: conv.type,
+        memberCount: conv.participants.length,
+        otherUserId: other?.userId,
+      };
+    });
     setConversations(convData);
     if (convData.length > 0) {
       setSelectedConversation((prev) => prev ?? convData[0]);
@@ -319,6 +328,14 @@ const MessagesPage: React.FC = () => {
                     icon={convo.type === 'group' ? <TeamOutlined /> : <UserOutlined />}
                     style={{ border: isSelected ? `2px solid ${token.colorPrimary}` : `2px solid ${token.colorBorderSecondary}` }}
                   />
+                  {convo.otherUserId && presenceMap[convo.otherUserId]?.online && (
+                    <div style={{
+                      position: 'absolute', bottom: 0, right: 0,
+                      width: 12, height: 12, borderRadius: '50%',
+                      background: token.colorSuccess,
+                      border: `2px solid ${token.colorBgContainer}`
+                    }} />
+                  )}
                 </div>
 
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -379,7 +396,7 @@ const MessagesPage: React.FC = () => {
               <Text type="secondary" style={{ fontSize: 12 }}>
                 {selectedConversation?.type === 'group'
                   ? `${selectedConversation.memberCount} thành viên`
-                  : 'Nhắn tin trực tiếp'}
+                  : selectedPresence.label || 'Không có thông tin'}
               </Text>
             </div>
           </Space>

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { FriendshipController } from './friendship.controller';
 import { FriendshipDocument, FriendshipSchema } from 'src/modules/friendship/infrastructure/friendship.schema';
@@ -24,8 +24,8 @@ import { AutoCreateDirectConversationListener } from 'src/modules/friendship/app
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: FriendshipDocument.name, schema: FriendshipSchema }]),
-    UserModule,
-    ConversationsModule,
+    forwardRef(() => UserModule),
+    forwardRef(() => ConversationsModule),
   ],
   controllers: [FriendshipController],
   providers: [

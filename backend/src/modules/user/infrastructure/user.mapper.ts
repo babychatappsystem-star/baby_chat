@@ -16,6 +16,8 @@ export class UserMapper {
       createdAt: doc.createdAt,
       friendCode: doc.friendCode,
       avatarFileId: doc.avatarFileId,
+      lastSeenAt: doc.lastSeenAt,
+      hidePresence: doc.hidePresence,
     });
   }
 

@@ -40,7 +40,20 @@ async function bootstrap() {
   });
 
   const port = process.env.PORT ?? 3000;
-  await app.listen(port);
+  
+  try {
+    await app.listen(port);
+  } catch (error: any) {
+    if (error.code === 'EADDRINUSE') {
+      const logger = new Logger('Bootstrap');
+      logger.error(`❌ Cổng (Port) ${port} đang bị chiếm dụng bởi một tiến trình khác!`);
+      logger.error(`👉 Chạy lệnh sau trong Terminal để giải phóng port:`);
+      logger.error(`   npx kill-port ${port}`);
+      logger.error(`Hoặc (Windows PowerShell): Stop-Process -Id (Get-NetTCPConnection -LocalPort ${port}).OwningProcess -Force`);
+      process.exit(1);
+    }
+    throw error;
+  }
 
   const logger = new Logger('Bootstrap');
   logger.log(`Application is running on: http://localhost:${port}`);

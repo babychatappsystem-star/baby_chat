@@ -19,6 +19,9 @@ export class ParticipantResponseDto {
 
   @ApiProperty({ example: true })
   isActive: boolean;
+
+  @ApiPropertyOptional({ example: '/uploads/avatar.webp', description: 'URL avatar của user' })
+  avatarUrl?: string | null;
 }
 
 // Settings của conversation.

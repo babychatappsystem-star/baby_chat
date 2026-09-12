@@ -1,5 +1,6 @@
-import { Body, Controller, Delete, Get, HttpCode, Patch, Post, Param, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Patch, Post, Param, UseGuards, Inject } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
+import { IUserRepository } from 'src/modules/user/domain/i-user.repository';
 import { JwtAuthGuard } from 'src/modules/auth/interfaces/guards/jwt-auth.guard';
 import { CurrentUser } from 'src/shared/decorators/current-user.decorator';
 import { CreateConversationUseCase } from 'src/modules/conversation/application/use-cases/create-conversation.usecase';
@@ -46,6 +47,7 @@ export class ConversationsController {
     private readonly addReactionUseCase: AddReactionUseCase,
     private readonly removeReactionUseCase: RemoveReactionUseCase,
     private readonly fileUrlResolver: FileUrlResolver,
+    @Inject(IUserRepository) private readonly userRepository: IUserRepository,
   ) {}
 
   // Helper resolve avatarUrl cho 1 conversation entity.
@@ -64,11 +66,29 @@ export class ConversationsController {
     const avatarMap = await this.fileUrlResolver.resolveMany(result.map((r) => r.conversation.avatarFileId));
     const urlMap = new Map<string, string>();
     for (const [fileId, resolved] of avatarMap) urlMap.set(fileId, resolved.url);
+
+    // Fetch participant avatars
+    const participantUserIds = new Set<string>();
+    for (const r of result) {
+      r.conversation.participants.forEach(p => participantUserIds.add(p.userId));
+    }
+    const participants = await this.userRepository.findByIds(Array.from(participantUserIds));
+    const participantAvatarFileIds = participants.map(p => p.avatarFileId).filter(id => !!id) as string[];
+    const participantAvatarMap = await this.fileUrlResolver.resolveMany(participantAvatarFileIds);
+    
+    const participantUrlMap = new Map<string, string>();
+    for (const user of participants) {
+      if (user.avatarFileId) {
+        const resolved = participantAvatarMap.get(user.avatarFileId);
+        if (resolved) participantUrlMap.set(user.id!, resolved.url);
+      }
+    }
     
     return result.map(r => {
         const dto = ConversationResponseMapper.toConversationDto(
             r.conversation, 
-            r.conversation.avatarFileId ? urlMap.get(r.conversation.avatarFileId) : null
+            r.conversation.avatarFileId ? urlMap.get(r.conversation.avatarFileId) : null,
+            participantUrlMap
         );
         if (r.lastMessage) {
             dto.lastMessage = r.lastMessage.type === 'image' ? '[Hình ảnh]' : r.lastMessage.content;
@@ -85,7 +105,21 @@ export class ConversationsController {
   async getConversationById(@Param('id') id: string): Promise<ConversationResponseDto> {
     const result = await this.getConversationByIdUseCase.execute(id);
     const avatarUrl = await this.resolveAvatarUrl(result.avatarFileId);
-    return ConversationResponseMapper.toConversationDto(result, avatarUrl);
+
+    const participantUserIds = result.participants.map(p => p.userId);
+    const participants = await this.userRepository.findByIds(participantUserIds);
+    const participantAvatarFileIds = participants.map(p => p.avatarFileId).filter(fileId => !!fileId) as string[];
+    const participantAvatarMap = await this.fileUrlResolver.resolveMany(participantAvatarFileIds);
+    
+    const participantUrlMap = new Map<string, string>();
+    for (const user of participants) {
+      if (user.avatarFileId) {
+        const resolved = participantAvatarMap.get(user.avatarFileId);
+        if (resolved) participantUrlMap.set(user.id!, resolved.url);
+      }
+    }
+
+    return ConversationResponseMapper.toConversationDto(result, avatarUrl, participantUrlMap);
   }
 
   @ApiOperation({ summary: 'Tạo hội thoại mới' })

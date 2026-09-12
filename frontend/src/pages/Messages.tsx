@@ -3,18 +3,30 @@ import { Phone, Video, MoreVertical, Smile, Paperclip, MessageCircle } from 'luc
 import { Input, Button, Badge, Avatar, Tooltip, Typography, Space, Spin, Popover } from 'antd';
 import EmojiPicker, { type EmojiClickData } from 'emoji-picker-react';
 import { SearchOutlined, SendOutlined, TeamOutlined, UserOutlined } from '@ant-design/icons';
+import dayjs from 'dayjs';
+import isToday from 'dayjs/plugin/isToday';
+import isYesterday from 'dayjs/plugin/isYesterday';
 import { conversationService } from '../services/conversationService';
+
+dayjs.extend(isToday);
+dayjs.extend(isYesterday);
 import { authService } from '../services/authService';
-import type { ConversationDTO, MessageDTO } from '../types/api.types';
+import type { ConversationDTO, MessageDTO, ConversationParticipant } from '../types/api.types';
 import { useThemeToken } from '../hooks/useThemeToken';
 import { useSocketEvent } from '../hooks/useSocketEvent';
 import { useSocketConnect } from '../hooks/useSocketConnect';
 import { WS_EVENTS } from '../lib/wsEvents';
 import { PresenceContext } from '../contexts/PresenceContext';
 import { usePresence } from '../hooks/usePresence';
-
+import environmentLoader from '../config/environmentLoader';
 
 const { Text, Title } = Typography;
+
+const resolveAvatarUrl = (url?: string | null, fallbackId?: string) => {
+  if (!url) return `https://i.pravatar.cc/150?u=${fallbackId}`;
+  if (url.startsWith('/')) return `${environmentLoader.loadConfig().apiUrl}${url}`;
+  return url;
+};
 
 interface IConversation {
   id: string;
@@ -26,6 +38,7 @@ interface IConversation {
   type: 'direct' | 'group';
   memberCount: number;
   otherUserId?: string;
+  participants: ConversationParticipant[];
 }
 
 interface IMessage {
@@ -34,11 +47,29 @@ interface IMessage {
   senderName?: string;
   text: string;
   timestamp: string;
+  rawDate: string;
   reactions: Array<{ userId: string; emoji: string }>;
 }
 
 const formatTime = (iso?: string): string =>
-  iso ? new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+  iso ? dayjs(iso).format('HH:mm') : '';
+
+const getTimeSeparator = (currentRaw: string, prevRaw?: string): string | null => {
+  const current = dayjs(currentRaw);
+  const prev = prevRaw ? dayjs(prevRaw) : null;
+
+  if (!prev || !current.isSame(prev, 'day')) {
+    if (current.isToday()) return `Hôm nay ${current.format('HH:mm')}`;
+    if (current.isYesterday()) return `Hôm qua ${current.format('HH:mm')}`;
+    return current.format('DD/MM/YYYY HH:mm');
+  }
+
+  if (current.diff(prev, 'hour', true) >= 1) {
+    return current.format('HH:mm');
+  }
+
+  return null;
+};
 
 const conversationTitle = (conv: ConversationDTO, currentUserId: string): string => {
   if (conv.type === 'direct') {
@@ -54,6 +85,7 @@ const mapMessage = (msg: MessageDTO, currentUserId: string): IMessage => ({
   sender: msg.senderId && msg.senderId === currentUserId ? 'me' : msg.senderId ?? 'unknown',
   text: msg.content,
   timestamp: formatTime(msg.createdAt),
+  rawDate: msg.createdAt ?? new Date().toISOString(),
   reactions: msg.reactions ?? [],
 });
 
@@ -120,21 +152,28 @@ const MessagesPage: React.FC = () => {
     const valid = dtos.filter((conv) => conv.id);
     const convData: IConversation[] = valid.map((conv) => {
       const other = conv.type === 'direct' ? conv.participants.find((p) => p.userId !== currentUserId) : undefined;
+      const avatarUrl = conv.type === 'direct' ? other?.avatarUrl : conv.avatar;
+      const fallbackId = conv.type === 'direct' ? other?.userId : conv.id;
       return {
         id: conv.id,
         name: conversationTitle(conv, currentUserId),
-        avatar: conv.avatar || `https://i.pravatar.cc/150?u=${conv.id}`,
+        avatar: resolveAvatarUrl(avatarUrl, fallbackId),
         lastMessage: conv.lastMessage || 'Chưa có tin nhắn',
         timestamp: formatTime(conv.lastMessageAt || conv.updatedAt),
         unread: 0,
         type: conv.type,
         memberCount: conv.participants.length,
         otherUserId: other?.userId,
+        participants: conv.participants,
       };
     });
     setConversations(convData);
     if (convData.length > 0) {
-      setSelectedConversation((prev) => prev ?? convData[0]);
+      setSelectedConversation((prev) => {
+        if (!prev) return convData[0];
+        const fresh = convData.find((c) => c.id === prev.id);
+        return fresh ?? convData[0];
+      });
     }
   }, [currentUserId]);
 
@@ -186,6 +225,7 @@ const MessagesPage: React.FC = () => {
         sender: payload.senderId === currentUserId ? 'me' : payload.senderId,
         text: payload.content,
         timestamp: formatTime(payload.createdAt),
+        rawDate: payload.createdAt ?? new Date().toISOString(),
         reactions: [],
       },
     ]);
@@ -425,7 +465,13 @@ const MessagesPage: React.FC = () => {
             messages.map((msg, i) => {
               const isMe = msg.sender === 'me';
               const prevMsg = messages[i - 1];
-              const showAvatar = !isMe && (prevMsg?.sender !== msg.sender);
+              const nextMsg = messages[i + 1];
+              const isFirstInGroup = prevMsg?.sender !== msg.sender;
+              const isLastInGroup = nextMsg?.sender !== msg.sender;
+              const showAvatar = !isMe && isFirstInGroup;
+              
+              const senderParticipant = selectedConversation?.participants.find(p => p.userId === msg.sender);
+              const senderAvatarUrl = resolveAvatarUrl(senderParticipant?.avatarUrl, msg.sender);
 
               // Group reactions by emoji
               const groupedReactions = msg.reactions.reduce((acc, r) => {
@@ -433,13 +479,28 @@ const MessagesPage: React.FC = () => {
                 return acc;
               }, {} as Record<string, string[]>);
 
+              const separator = getTimeSeparator(msg.rawDate, prevMsg?.rawDate);
+
               return (
                 <React.Fragment key={msg.id}>
+                {separator && (
+                  <div style={{ display: 'flex', justifyContent: 'center', margin: '16px 0 8px 0' }}>
+                    <div style={{
+                      background: token.colorFillQuaternary,
+                      padding: '2px 10px',
+                      borderRadius: 12,
+                      fontSize: 11,
+                      color: token.colorTextSecondary
+                    }}>
+                      {separator}
+                    </div>
+                  </div>
+                )}
                 <div
                   className="message-row"
                   style={{
                     display: 'flex',
-                    marginBottom: prevMsg?.sender !== msg.sender ? 12 : 4,
+                    marginBottom: isLastInGroup ? 12 : 2,
                     justifyContent: isMe ? 'flex-end' : 'flex-start',
                     alignItems: 'flex-end',
                     gap: 8,
@@ -457,7 +518,7 @@ const MessagesPage: React.FC = () => {
                     <div style={{ width: 32, flexShrink: 0 }}>
                       {showAvatar && (
                         <Avatar
-                          src={`https://i.pravatar.cc/150?u=${msg.sender}`}
+                          src={senderAvatarUrl}
                           size={32}
                           style={{ border: `1px solid ${token.colorBorderSecondary}` }}
                         />
@@ -467,34 +528,24 @@ const MessagesPage: React.FC = () => {
 
                   <div style={{ maxWidth: 460 }}>
                     {/* Bubble */}
-                    <div
-                      style={{
-                        padding: '9px 14px',
-                        borderRadius: isMe ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                        background: isMe ? token.colorPrimary : token.colorBgContainer,
-                        border: isMe ? 'none' : `1px solid ${token.colorBorderSecondary}`,
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.07)',
-                        wordBreak: 'break-word',
-                      }}
-                    >
-                      <Text style={{ display: 'block', color: isMe ? '#fff' : undefined, lineHeight: 1.5 }}>
-                        {msg.text}
-                      </Text>
-                    </div>
-                    {/* Timestamp dưới bubble */}
-                    <Text
-                      style={{
-                        display: 'block',
-                        fontSize: 11,
-                        marginTop: 3,
-                        textAlign: isMe ? 'right' : 'left',
-                        color: token.colorTextPlaceholder,
-                        paddingLeft: isMe ? 0 : 4,
-                        paddingRight: isMe ? 4 : 0,
-                      }}
-                    >
-                      {msg.timestamp}
-                    </Text>
+                    <Tooltip title={msg.timestamp} placement={isMe ? 'left' : 'right'}>
+                      <div
+                        style={{
+                          padding: '9px 14px',
+                          borderRadius: isMe 
+                            ? `18px ${isFirstInGroup ? '18px' : '4px'} 4px 18px` 
+                            : `${isFirstInGroup ? '18px' : '4px'} 18px 18px 4px`,
+                          background: isMe ? token.colorPrimary : token.colorBgContainer,
+                          border: isMe ? 'none' : `1px solid ${token.colorBorderSecondary}`,
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.07)',
+                          wordBreak: 'break-word',
+                        }}
+                      >
+                        <Text style={{ display: 'block', color: isMe ? '#fff' : undefined, lineHeight: 1.5 }}>
+                          {msg.text}
+                        </Text>
+                      </div>
+                    </Tooltip>
                   </div>
                   
                   {/* Hover action to show emoji picker */}

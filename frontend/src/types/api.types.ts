@@ -50,6 +50,7 @@ export interface ConversationParticipant {
   role: 'admin' | 'member';
   joinedAt: string;
   isActive: boolean;
+  avatarUrl?: string;
 }
 
 export interface ConversationDTO {

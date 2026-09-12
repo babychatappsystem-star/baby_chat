@@ -13,6 +13,7 @@ export class ConversationResponseMapper {
   static toConversationDto(
     entity: ConversationEntity,
     avatarUrl?: string | null,
+    participantAvatarUrlMap?: Map<string, string>,
   ): ConversationResponseDto {
     return {
       id: entity.id ?? '',
@@ -29,6 +30,7 @@ export class ConversationResponseMapper {
         joinedAt: p.joinedAt,
         leftAt: p.leftAt,
         isActive: p.isActive,
+        avatarUrl: participantAvatarUrlMap?.get(p.userId) ?? null,
       })),
       settings: {
         isPrivate: entity.settings.isPrivate,
@@ -45,9 +47,14 @@ export class ConversationResponseMapper {
   static toConversationListDto(
     entities: ConversationEntity[],
     avatarUrlMap?: Map<string, string>,
+    participantAvatarUrlMap?: Map<string, string>,
   ): ConversationResponseDto[] {
     return entities.map((e) =>
-      this.toConversationDto(e, e.avatarFileId ? avatarUrlMap?.get(e.avatarFileId) : null),
+      this.toConversationDto(
+        e, 
+        e.avatarFileId ? avatarUrlMap?.get(e.avatarFileId) : null,
+        participantAvatarUrlMap
+      ),
     );
   }
 

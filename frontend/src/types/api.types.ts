@@ -61,6 +61,8 @@ export interface ConversationDTO {
   participants: ConversationParticipant[];
   createdAt?: string;
   updatedAt?: string;
+  lastMessage?: string;
+  lastMessageAt?: string;
 }
 
 // GET /conversations/:id/pages — danh sách các trang tin nhắn.

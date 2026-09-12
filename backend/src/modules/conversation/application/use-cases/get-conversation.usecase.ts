@@ -10,10 +10,25 @@ import { ConversationNotFoundException } from 'src/shared/exceptions/domain-exce
 export class GetConversationsByUserUseCase {
   constructor(
     @Inject(IConversationRepository) private readonly conversationRepository: IConversationRepository,
+    @Inject(IPageRepository) private readonly pageRepository: IPageRepository,
   ) {}
 
-  async execute(userId: string): Promise<ConversationEntity[]> {
-    return this.conversationRepository.findByUserId(userId);
+  async execute(userId: string): Promise<Array<{ conversation: ConversationEntity; lastMessage: MessageEntity | null }>> {
+    const convs = await this.conversationRepository.findByUserId(userId);
+    const result = await Promise.all(
+      convs.map(async (conv) => {
+        const lastMessage = await this.pageRepository.getLatestMessage(conv.id!);
+        return { conversation: conv, lastMessage };
+      })
+    );
+
+    result.sort((a, b) => {
+      const timeA = a.lastMessage?.createdAt?.getTime() ?? a.conversation.updatedAt?.getTime() ?? 0;
+      const timeB = b.lastMessage?.createdAt?.getTime() ?? b.conversation.updatedAt?.getTime() ?? 0;
+      return timeB - timeA;
+    });
+
+    return result;
   }
 }
 

@@ -94,6 +94,12 @@ export class ConversationResponseDto {
 
   @ApiPropertyOptional({ example: '2026-05-23T10:00:00.000Z' })
   updatedAt?: Date;
+
+  @ApiPropertyOptional({ example: 'Hello there' })
+  lastMessage?: string;
+
+  @ApiPropertyOptional({ example: '2026-05-23T10:00:00.000Z' })
+  lastMessageAt?: Date;
 }
 
 // Một message trong conversation, trả về cho client.

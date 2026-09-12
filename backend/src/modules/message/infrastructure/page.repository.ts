@@ -136,4 +136,14 @@ export class PageRepository implements IPageRepository {
       },
     );
   }
+
+  async getLatestMessage(conversationId: string): Promise<MessageEntity | null> {
+    const doc = await this.pageModel.findOne({
+      conversationId: new mongoose.Types.ObjectId(conversationId)
+    }).sort({ pageNumber: -1 });
+
+    if (!doc || doc.messages.length === 0) return null;
+    const page = PageMapper.toDomain(doc);
+    return page.messages[page.messages.length - 1];
+  }
 }

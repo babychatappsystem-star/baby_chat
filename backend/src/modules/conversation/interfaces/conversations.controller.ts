@@ -61,10 +61,21 @@ export class ConversationsController {
   async getAllConversations(@CurrentUser('userId') userId: string): Promise<ConversationResponseDto[]> {
     const result = await this.getConversationsByUserUseCase.execute(userId);
     // Batch resolve avatarUrl của tất cả conversation tránh N+1.
-    const avatarMap = await this.fileUrlResolver.resolveMany(result.map((c) => c.avatarFileId));
+    const avatarMap = await this.fileUrlResolver.resolveMany(result.map((r) => r.conversation.avatarFileId));
     const urlMap = new Map<string, string>();
     for (const [fileId, resolved] of avatarMap) urlMap.set(fileId, resolved.url);
-    return ConversationResponseMapper.toConversationListDto(result, urlMap);
+    
+    return result.map(r => {
+        const dto = ConversationResponseMapper.toConversationDto(
+            r.conversation, 
+            r.conversation.avatarFileId ? urlMap.get(r.conversation.avatarFileId) : null
+        );
+        if (r.lastMessage) {
+            dto.lastMessage = r.lastMessage.type === 'image' ? '[Hình ảnh]' : r.lastMessage.content;
+            dto.lastMessageAt = r.lastMessage.createdAt;
+        }
+        return dto;
+    });
   }
 
   @ApiOperation({ summary: 'Lấy hội thoại theo ID' })

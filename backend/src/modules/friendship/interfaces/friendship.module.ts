@@ -6,6 +6,7 @@ import { FriendshipRepository } from 'src/modules/friendship/infrastructure/frie
 import { IFriendshipRepository } from 'src/modules/friendship/domain/i-friendship.repository';
 import { UserModule } from 'src/modules/user/interfaces/users.module';
 import { ConversationsModule } from 'src/modules/conversation/interfaces/conversations.module';
+import { FileModule } from 'src/modules/file/interfaces/file.module';
 import { SendFriendRequestUseCase } from 'src/modules/friendship/application/use-cases/send-friend-request.usecase';
 import { SendFriendRequestByCodeUseCase } from 'src/modules/friendship/application/use-cases/send-friend-request-by-code.usecase';
 import { AcceptFriendRequestUseCase } from 'src/modules/friendship/application/use-cases/accept-friend-request.usecase';
@@ -26,6 +27,7 @@ import { AutoCreateDirectConversationListener } from 'src/modules/friendship/app
     MongooseModule.forFeature([{ name: FriendshipDocument.name, schema: FriendshipSchema }]),
     forwardRef(() => UserModule),
     forwardRef(() => ConversationsModule),
+    FileModule,
   ],
   controllers: [FriendshipController],
   providers: [

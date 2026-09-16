@@ -38,9 +38,8 @@ const { Title, Text } = Typography;
 
 const { apiUrl } = environmentLoader.loadConfig();
 
-const avatarFor = (id: string): string => `https://i.pravatar.cc/150?u=${id}`;
 const resolveAvatarUrl = (profile: ProfileDTO | null): string | undefined =>
-  profile?.avatarUrl ? `${apiUrl}${profile.avatarUrl}` : profile ? avatarFor(profile.userId) : undefined;
+  profile?.avatarUrl ? `${apiUrl}${profile.avatarUrl}` : undefined;
 const formatCode = (code: string): string =>
   code.length === 8 ? `${code.slice(0, 4)}-${code.slice(4)}` : code;
 
@@ -157,9 +156,11 @@ const ProfilePage: React.FC = () => {
               <Avatar
                 size={96}
                 src={resolveAvatarUrl(profile)}
-                icon={<UserOutlined />}
+                icon={!resolveAvatarUrl(profile) && !profile?.username ? <UserOutlined /> : undefined}
                 style={{ border: `3px solid ${token.colorPrimary}` }}
-              />
+              >
+                {!resolveAvatarUrl(profile) && profile?.username && profile.username.charAt(0).toUpperCase()}
+              </Avatar>
               <Button
                 shape="circle"
                 size="small"

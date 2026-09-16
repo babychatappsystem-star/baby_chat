@@ -68,9 +68,7 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
   const currentUser = {
     name:   profile?.username ?? localStorage.getItem('username') ?? 'John Doe',
     email:  profile?.email    ?? localStorage.getItem('email')    ?? 'user@example.com',
-    avatar: profile?.avatarUrl
-      ? `${apiUrl}${profile.avatarUrl}`
-      : `https://i.pravatar.cc/150?u=${profile?.userId ?? localStorage.getItem('userId') ?? 'guest'}`,
+    avatar: profile?.avatarUrl ? `${apiUrl}${profile.avatarUrl}` : null,
   };
 
   const userMenuItems: MenuProps['items'] = [
@@ -202,7 +200,9 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 
           <Dropdown menu={{ items: userMenuItems, onClick: handleUserMenuClick }} placement="bottomRight" trigger={['click']}>
             <Space style={{ cursor: 'pointer' }}>
-              <Avatar src={currentUser.avatar} size={32} style={{ border: '2px solid #e8385a' }} />
+              <Avatar src={currentUser.avatar || undefined} size={32} style={{ border: '2px solid #e8385a' }}>
+                {!currentUser.avatar && currentUser.name.charAt(0).toUpperCase()}
+              </Avatar>
               {isMd && <Text style={{ fontWeight: 500 }}>{currentUser.name}</Text>}
             </Space>
           </Dropdown>

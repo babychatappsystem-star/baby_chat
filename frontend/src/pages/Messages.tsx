@@ -22,8 +22,8 @@ import environmentLoader from '../config/environmentLoader';
 
 const { Text, Title } = Typography;
 
-const resolveAvatarUrl = (url?: string | null, fallbackId?: string) => {
-  if (!url) return `https://i.pravatar.cc/150?u=${fallbackId}`;
+const resolveAvatarUrl = (url?: string | null) => {
+  if (!url) return undefined;
   if (url.startsWith('/')) return `${environmentLoader.loadConfig().apiUrl}${url}`;
   return url;
 };
@@ -157,7 +157,7 @@ const MessagesPage: React.FC = () => {
       return {
         id: conv.id,
         name: conversationTitle(conv, currentUserId),
-        avatar: resolveAvatarUrl(avatarUrl, fallbackId),
+        avatar: resolveAvatarUrl(avatarUrl),
         lastMessage: conv.lastMessage || 'Chưa có tin nhắn',
         timestamp: formatTime(conv.lastMessageAt || conv.updatedAt),
         unread: 0,
@@ -362,12 +362,14 @@ const MessagesPage: React.FC = () => {
                 {/* Avatar */}
                 <div style={{ position: 'relative', flexShrink: 0, marginRight: 12 }}>
                   <Avatar
-                    src={convo.avatar}
+                    src={convo.avatar || undefined}
                     alt={convo.name}
                     size={46}
-                    icon={convo.type === 'group' ? <TeamOutlined /> : <UserOutlined />}
+                    icon={convo.type === 'group' ? <TeamOutlined /> : (!convo.avatar ? undefined : <UserOutlined />)}
                     style={{ border: isSelected ? `2px solid ${token.colorPrimary}` : `2px solid ${token.colorBorderSecondary}` }}
-                  />
+                  >
+                    {!convo.avatar && convo.type !== 'group' && convo.name.charAt(0).toUpperCase()}
+                  </Avatar>
                   {convo.otherUserId && presenceMap[convo.otherUserId]?.online && (
                     <div style={{
                       position: 'absolute', bottom: 0, right: 0,
@@ -423,11 +425,13 @@ const MessagesPage: React.FC = () => {
           <Space size={12}>
             <div style={{ position: 'relative' }}>
               <Avatar
-                src={selectedConversation?.avatar}
+                src={selectedConversation?.avatar || undefined}
                 size={44}
-                icon={selectedConversation?.type === 'group' ? <TeamOutlined /> : <UserOutlined />}
+                icon={selectedConversation?.type === 'group' ? <TeamOutlined /> : (!selectedConversation?.avatar ? undefined : <UserOutlined />)}
                 style={{ border: `2px solid ${token.colorPrimaryBorder}` }}
-              />
+              >
+                {!selectedConversation?.avatar && selectedConversation?.type !== 'group' && selectedConversation?.name.charAt(0).toUpperCase()}
+              </Avatar>
             </div>
             <div>
               <Text strong style={{ display: 'block', fontSize: 15 }}>
@@ -471,7 +475,7 @@ const MessagesPage: React.FC = () => {
               const showAvatar = !isMe && isFirstInGroup;
               
               const senderParticipant = selectedConversation?.participants.find(p => p.userId === msg.sender);
-              const senderAvatarUrl = resolveAvatarUrl(senderParticipant?.avatarUrl, msg.sender);
+              const senderAvatarUrl = resolveAvatarUrl(senderParticipant?.avatarUrl);
 
               // Group reactions by emoji
               const groupedReactions = msg.reactions.reduce((acc, r) => {
@@ -518,10 +522,12 @@ const MessagesPage: React.FC = () => {
                     <div style={{ width: 32, flexShrink: 0 }}>
                       {showAvatar && (
                         <Avatar
-                          src={senderAvatarUrl}
+                          src={senderAvatarUrl || undefined}
                           size={32}
                           style={{ border: `1px solid ${token.colorBorderSecondary}` }}
-                        />
+                        >
+                          {!senderAvatarUrl && (senderParticipant?.username || 'U').charAt(0).toUpperCase()}
+                        </Avatar>
                       )}
                     </div>
                   )}

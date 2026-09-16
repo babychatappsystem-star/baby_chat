@@ -17,6 +17,7 @@ import {
 } from 'src/modules/friendship/application/use-cases/list-friendships.usecase';
 import { IUserRepository } from 'src/modules/user/domain/i-user.repository';
 import { FriendshipEntity } from 'src/modules/friendship/domain/friendship.entity';
+import { FileUrlResolver } from 'src/modules/file/application/file-url-resolver.service';
 import { BlockUserDto, SendFriendRequestByCodeDto, SendFriendRequestDto } from './dto/friend-request.dto';
 import { FriendshipResponseDto, FriendshipResponseMapper } from './dto/friendship-response.dto';
 
@@ -38,16 +39,24 @@ export class FriendshipController {
     private readonly listIncoming: ListIncomingRequestsUseCase,
     private readonly listOutgoing: ListOutgoingRequestsUseCase,
     @Inject(IUserRepository) private readonly userRepository: IUserRepository,
+    private readonly fileUrlResolver: FileUrlResolver,
   ) {}
 
-  // Batch fetch username của tất cả "đối phương" trong danh sách friendship và trả về map userId → username.
-  private async buildUsernameMap(
+  private async buildUserMetaMap(
     entities: FriendshipEntity[],
     currentUserId: string,
-  ): Promise<Map<string, string>> {
+  ): Promise<Map<string, { username: string; avatarUrl: string | null }>> {
     const otherIds = entities.map((e) => e.otherUserId(currentUserId));
     const users = await this.userRepository.findByIds(otherIds);
-    return new Map(users.map((u) => [u.id!, u.username]));
+    
+    // Thu thập tất cả avatarFileId để resolve 1 lần
+    const fileIds = users.map((u) => u.avatarFileId).filter((id): id is string => !!id);
+    const resolvedUrls = await this.fileUrlResolver.resolveMany(fileIds);
+
+    return new Map(users.map((u) => {
+      const url = u.avatarFileId ? resolvedUrls.get(u.avatarFileId)?.url ?? null : null;
+      return [u.id!, { username: u.username, avatarUrl: url }];
+    }));
   }
 
   @ApiOperation({ summary: 'Danh sách bạn bè của user hiện tại' })
@@ -55,8 +64,8 @@ export class FriendshipController {
   @Get()
   async getFriends(@CurrentUser('userId') userId: string): Promise<FriendshipResponseDto[]> {
     const result = await this.listFriends.execute(userId);
-    const usernameMap = await this.buildUsernameMap(result, userId);
-    return FriendshipResponseMapper.toListDtoWithFriend(result, userId, usernameMap);
+    const userMetaMap = await this.buildUserMetaMap(result, userId);
+    return FriendshipResponseMapper.toListDtoWithFriend(result, userId, userMetaMap);
   }
 
   @ApiOperation({ summary: 'Gửi lời mời kết bạn (bằng userId)' })
@@ -93,8 +102,8 @@ export class FriendshipController {
   @Get('/requests/incoming')
   async incoming(@CurrentUser('userId') userId: string): Promise<FriendshipResponseDto[]> {
     const result = await this.listIncoming.execute(userId);
-    const usernameMap = await this.buildUsernameMap(result, userId);
-    return FriendshipResponseMapper.toListDtoWithFriend(result, userId, usernameMap);
+    const userMetaMap = await this.buildUserMetaMap(result, userId);
+    return FriendshipResponseMapper.toListDtoWithFriend(result, userId, userMetaMap);
   }
 
   @ApiOperation({ summary: 'Lời mời user hiện tại đã gửi, chưa được duyệt' })
@@ -102,8 +111,8 @@ export class FriendshipController {
   @Get('/requests/outgoing')
   async outgoing(@CurrentUser('userId') userId: string): Promise<FriendshipResponseDto[]> {
     const result = await this.listOutgoing.execute(userId);
-    const usernameMap = await this.buildUsernameMap(result, userId);
-    return FriendshipResponseMapper.toListDtoWithFriend(result, userId, usernameMap);
+    const userMetaMap = await this.buildUserMetaMap(result, userId);
+    return FriendshipResponseMapper.toListDtoWithFriend(result, userId, userMetaMap);
   }
 
   @ApiOperation({ summary: 'Chấp nhận lời mời kết bạn' })

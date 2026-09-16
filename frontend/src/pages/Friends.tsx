@@ -40,7 +40,19 @@ import { WS_EVENTS } from '../lib/wsEvents';
 
 const { Title, Text } = Typography;
 
-const avatarFor = (id: string): string => `https://i.pravatar.cc/150?u=${id}`;
+import environmentLoader from '../config/environmentLoader';
+
+const env = environmentLoader.loadConfig();
+// Nếu backend apiUrl có dạng http://localhost:3000/api, ta lấy origin
+const backendOrigin = env.apiUrl ? new URL(env.apiUrl).origin : '';
+
+const avatarFor = (id: string, avatarUrl?: string | null): string => {
+  if (avatarUrl) {
+    if (avatarUrl.startsWith('http')) return avatarUrl;
+    return `${backendOrigin}${avatarUrl}`;
+  }
+  return `https://i.pravatar.cc/150?u=${id}`;
+};
 const displayName = (name: string | null): string => name ?? 'Deleted user';
 const formatCode = (code: string): string =>
   code.length === 8 ? `${code.slice(0, 4)}-${code.slice(4)}` : code;
@@ -290,7 +302,7 @@ const FriendsPage: React.FC = () => {
               ]}
             >
               <List.Item.Meta
-                avatar={<Avatar src={avatarFor(req.friend.userId)} size={48} />}
+                avatar={<Avatar src={avatarFor(req.friend.userId, req.friend.avatarUrl)} size={48} />}
                 title={<Text strong>{displayName(req.friend.username)}</Text>}
                 description="Muốn kết bạn với bạn"
               />
@@ -320,7 +332,7 @@ const FriendsPage: React.FC = () => {
               ]}
             >
               <List.Item.Meta
-                avatar={<Avatar src={avatarFor(req.friend.userId)} size={48} />}
+                avatar={<Avatar src={avatarFor(req.friend.userId, req.friend.avatarUrl)} size={48} />}
                 title={<Text strong>{displayName(req.friend.username)}</Text>}
                 description={<Tag color="orange">Đang chờ duyệt</Tag>}
               />
@@ -373,7 +385,7 @@ const FriendsPage: React.FC = () => {
               ]}
             >
               <List.Item.Meta
-                avatar={<Avatar src={avatarFor(foundUser.id)} size={48} />}
+                avatar={<Avatar src={avatarFor(foundUser.id, foundUser.avatarUrl)} size={48} />}
                 title={<Text strong>{foundUser.username}</Text>}
                 description={foundUser.email}
               />
@@ -430,7 +442,8 @@ const FriendsPage: React.FC = () => {
             ]}
           >
             <List.Item.Meta
-              avatar={<Avatar src={avatarFor(fr.friend.userId)} size={48} />}
+              style={{ alignItems: 'center' }}
+              avatar={<Avatar src={avatarFor(fr.friend.userId, fr.friend.avatarUrl)} size={48} />}
               title={<Text strong>{displayName(fr.friend.username)}</Text>}
             />
           </List.Item>

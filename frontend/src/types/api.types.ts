@@ -116,6 +116,7 @@ export type FriendshipStatus = 'pending' | 'accepted' | 'blocked';
 export interface FriendPeer {
   userId: string;
   username: string | null; // null nếu user đó đã bị xóa
+  avatarUrl?: string | null;
 }
 
 // Item trả về từ /friendships, /friendships/requests/incoming, /outgoing
@@ -140,7 +141,8 @@ export interface FriendCodeResponse {
 export interface UserSearchResultDTO {
   id: string;
   username: string;
-  email: string;
+  email?: string; // Optional (không trả về khi tìm bằng friend code)
+  avatarUrl?: string | null;
 }
 
 // Friendship vừa tạo — POST /friendships/requests(/by-code)

@@ -8,6 +8,9 @@ export class FriendUserDto {
 
   @ApiProperty({ example: 'johndoe', nullable: true })
   username: string | null;
+
+  @ApiPropertyOptional({ example: '/uploads/abc.webp', nullable: true })
+  avatarUrl?: string | null;
 }
 
 export class FriendshipResponseDto {
@@ -55,7 +58,7 @@ export class FriendshipResponseMapper {
   static toListDtoWithFriend(
     entities: FriendshipEntity[],
     currentUserId: string,
-    usernameMap: Map<string, string>,
+    userMetaMap: Map<string, { username: string; avatarUrl: string | null }>,
   ): FriendshipResponseDto[] {
     return entities.map((e) => {
       const friendUserId = e.otherUserId(currentUserId);
@@ -63,7 +66,8 @@ export class FriendshipResponseMapper {
         ...this.toDto(e),
         friend: {
           userId: friendUserId,
-          username: usernameMap.get(friendUserId) ?? null,
+          username: userMetaMap.get(friendUserId)?.username ?? null,
+          avatarUrl: userMetaMap.get(friendUserId)?.avatarUrl ?? null,
         },
       };
     });

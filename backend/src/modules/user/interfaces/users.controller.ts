@@ -51,7 +51,7 @@ export class UsersController {
     return {
       items: result.items.map((user) => {
         const resolved = user.avatarFileId ? avatarMap.get(user.avatarFileId) : null;
-        return UserPublicDto.fromEntity(user, resolved?.url);
+        return UserPublicDto.fromEntity(user, resolved?.url, true); // Admin list có thể hiện email
       }),
       total: result.total,
       page: result.page,
@@ -97,7 +97,7 @@ export class UsersController {
   ): Promise<UserPublicDto> {
     const user = await this.updateUserAvatarUseCase.execute({ userId, fileId: dto.fileId });
     const resolved = await this.fileUrlResolver.resolve(user.avatarFileId);
-    return UserPublicDto.fromEntity(user, resolved?.url);
+    return UserPublicDto.fromEntity(user, resolved?.url, true); // Update profile của chính mình
   }
 
   @ApiBearerAuth('access-token')
@@ -111,7 +111,7 @@ export class UsersController {
   async getByFriendCode(@Param('code') code: string): Promise<UserPublicDto> {
     const user = await this.getUserByFriendCodeUseCase.execute(code);
     const resolved = await this.fileUrlResolver.resolve(user.avatarFileId);
-    return UserPublicDto.fromEntity(user, resolved?.url);
+    return UserPublicDto.fromEntity(user, resolved?.url, false); // GIẤU EMAIL KHI SEARCH THEO FRIEND CODE
   }
 
   @ApiBearerAuth('access-token')

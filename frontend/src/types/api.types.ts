@@ -93,6 +93,17 @@ export interface MessageDTO {
   updatedAt?: string;
 }
 
+export interface SendVerificationLinkPayload {
+  email: string;
+}
+
+export interface VerifyRegistrationPayload {
+  email: string;
+  token: string;
+  password?: string;
+  username?: string;
+}
+
 export interface SendMessagePayload {
   conversationId: string;
   content: string;

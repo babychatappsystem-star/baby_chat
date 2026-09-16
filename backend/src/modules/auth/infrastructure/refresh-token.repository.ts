@@ -22,6 +22,8 @@ export class RefreshTokenRepository implements IRefreshTokenRepository {
 
   // Active = chưa revoke + chưa hết hạn. Lọc cứng ở query để không cần load doc.
   async findActiveByHash(userId: string, tokenHash: string): Promise<RefreshTokenEntity | null> {
+    if (!mongoose.Types.ObjectId.isValid(userId)) return null;
+
     const doc = await this.model.findOne({
       userId: new mongoose.Types.ObjectId(userId),
       tokenHash,
@@ -36,6 +38,8 @@ export class RefreshTokenRepository implements IRefreshTokenRepository {
   }
 
   async revokeAllForUser(userId: string): Promise<void> {
+    if (!mongoose.Types.ObjectId.isValid(userId)) return;
+
     await this.model.updateMany(
       { userId: new mongoose.Types.ObjectId(userId), revokedAt: { $exists: false } },
       { $set: { revokedAt: new Date() } },

@@ -12,10 +12,21 @@ export class LoginDto {
   password: string;
 }
 
-export class RegisterDto {
+export class SendVerificationLinkDto {
   @ApiProperty({ example: 'user@example.com' })
   @IsEmail()
   email: string;
+}
+
+export class VerifyRegistrationDto {
+  @ApiProperty({ example: 'user@example.com' })
+  @IsEmail()
+  email: string;
+
+  @ApiProperty({ example: 'abc123token' })
+  @IsString()
+  @IsNotEmpty()
+  token: string;
 
   @ApiProperty({ example: 'password123', minLength: 6 })
   @IsString()

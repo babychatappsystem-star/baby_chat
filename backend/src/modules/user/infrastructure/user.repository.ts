@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { IUserRepository } from 'src/modules/user/domain/i-user.repository';
 import { UserEntity } from 'src/modules/user/domain/user.entity';
 import { UserDocument } from './user.schema';
@@ -14,6 +14,7 @@ export class UserRepository implements IUserRepository {
 
   // Tìm user theo MongoId. Dùng .lean() để trả plain object (nhanh hơn document).
   async findById(id: string): Promise<UserEntity | null> {
+    if (!Types.ObjectId.isValid(id)) return null;
     const doc = await this.userModel.findById(id).lean();
     return doc ? UserMapper.toDomain(doc as UserDocument) : null;
   }

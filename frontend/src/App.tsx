@@ -8,6 +8,7 @@ import MessagesPage from './pages/Messages';
 import HomePage from './pages/Home';
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
+import CreatePassword from './pages/CreatePassword';
 import About from './pages/About';
 import Service from './pages/Service';
 import FriendsPage from './pages/Friends';
@@ -181,6 +182,13 @@ const App: React.FC = () => {
             path="/signup"
             element={
                 <SignUp />
+            }
+          />
+
+          <Route
+            path="/create-password"
+            element={
+                <CreatePassword />
             }
           />
         </Routes>

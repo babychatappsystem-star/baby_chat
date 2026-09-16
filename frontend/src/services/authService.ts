@@ -1,18 +1,11 @@
 import axios from 'axios';
 import apiClient from '../api/apiClient';
 import environmentLoader from '../config/environmentLoader';
-import type { AuthResponse, ProfileDTO } from '../types/api.types';
+import type { AuthResponse, ProfileDTO, VerifyRegistrationPayload } from '../types/api.types';
 
 export interface LoginPayload {
   email: string;
   password: string;
-}
-
-export interface RegisterPayload {
-  username: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
 }
 
 const SESSION_KEYS = {
@@ -42,8 +35,13 @@ export const authService = {
     return data;
   },
 
-  async register(payload: RegisterPayload): Promise<AuthResponse> {
-    const { data } = await apiClient.post<AuthResponse>('/auth/register', payload);
+  async sendVerificationLink(email: string): Promise<{ message: string }> {
+    const { data } = await apiClient.post<{ message: string }>('/auth/register', { email });
+    return data;
+  },
+
+  async verifyRegistration(payload: VerifyRegistrationPayload): Promise<AuthResponse> {
+    const { data } = await apiClient.post<AuthResponse>('/auth/verify-registration', payload);
     persistSession(data);
     return data;
   },

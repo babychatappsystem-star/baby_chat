@@ -3,11 +3,12 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from "@nestjs/swagg
 import { JwtService } from "@nestjs/jwt";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { CurrentUser } from "src/shared/decorators/current-user.decorator";
-import { RegisterDto, LoginDto } from "./dto/auth.dto";
+import { SendVerificationLinkDto, VerifyRegistrationDto, LoginDto } from "./dto/auth.dto";
 import { RefreshTokenDto } from "./dto/refresh-token.dto";
 import { AuthResponseDto, ProfileResponseDto, LogoutResponseDto } from "./dto/auth-response.dto";
 import { AuthMapper } from "./dto/auth.mapper";
-import { RegisterUserUseCase } from "src/modules/auth/application/use-cases/register-user.usecase";
+import { SendVerificationLinkUseCase } from "src/modules/auth/application/use-cases/send-verification-link.usecase";
+import { VerifyAndCreateUserUseCase } from "src/modules/auth/application/use-cases/verify-and-create-user.usecase";
 import { LoginUserUseCase } from "src/modules/auth/application/use-cases/login-user.usecase";
 import { GetProfileUseCase } from "src/modules/user/application/use-cases/get-profile.usecase";
 import { RefreshTokensUseCase } from "src/modules/auth/application/use-cases/refresh-tokens.usecase";
@@ -19,7 +20,8 @@ import { TokenBlacklistService } from "../infrastructure/token-blacklist.service
 @Controller('auth')
 export class AuthController {
   constructor(
-    private readonly registerUserUseCase: RegisterUserUseCase,
+    private readonly sendVerificationLinkUseCase: SendVerificationLinkUseCase,
+    private readonly verifyAndCreateUserUseCase: VerifyAndCreateUserUseCase,
     private readonly loginUserUseCase: LoginUserUseCase,
     private readonly getProfileUseCase: GetProfileUseCase,
     private readonly refreshTokensUseCase: RefreshTokensUseCase,
@@ -28,13 +30,25 @@ export class AuthController {
     private readonly jwtService: JwtService,
   ) {}
 
-  @ApiOperation({ summary: 'Đăng ký tài khoản' })
-  @ApiResponse({ status: 201, description: 'Đăng ký thành công', type: AuthResponseDto })
-  // POST /auth/register — tạo account + trả về JWT. Public route.
+  @ApiOperation({ summary: 'Gửi link đăng ký (xác thực email)' })
+  @ApiResponse({ status: 201, description: 'Đã gửi link xác nhận' })
+  // POST /auth/register — tạo token, gửi qua email
   @Post('register')
-  async register(@Body() dto: RegisterDto): Promise<AuthResponseDto> {
-    const result = await this.registerUserUseCase.execute({
+  async register(@Body() dto: SendVerificationLinkDto): Promise<{ message: string }> {
+    await this.sendVerificationLinkUseCase.execute({
       email: dto.email,
+    });
+    return { message: 'Vui lòng kiểm tra email để hoàn tất đăng ký' };
+  }
+
+  @ApiOperation({ summary: 'Xác thực token và tạo tài khoản' })
+  @ApiResponse({ status: 201, description: 'Tạo tài khoản thành công', type: AuthResponseDto })
+  // POST /auth/verify-registration — verify token + hash pwd + trả về JWT
+  @Post('verify-registration')
+  async verifyRegistration(@Body() dto: VerifyRegistrationDto): Promise<AuthResponseDto> {
+    const result = await this.verifyAndCreateUserUseCase.execute({
+      email: dto.email,
+      token: dto.token,
       password: dto.password,
       username: dto.username,
     });

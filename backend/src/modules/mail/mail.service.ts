@@ -42,8 +42,9 @@ export class MailService {
     `;
 
     try {
+      const fromEmail = this.configService.get<string>('SMTP_FROM') || this.configService.get<string>('SMTP_USER');
       await this.transporter.sendMail({
-        from: `"BabyChat" <${this.configService.get<string>('SMTP_USER')}>`,
+        from: `"BabyChat" <${fromEmail}>`,
         to: email,
         subject: 'BabyChat - Xác nhận tài khoản',
         html,

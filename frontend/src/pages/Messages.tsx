@@ -153,7 +153,6 @@ const MessagesPage: React.FC = () => {
     const convData: IConversation[] = valid.map((conv) => {
       const other = conv.type === 'direct' ? conv.participants.find((p) => p.userId !== currentUserId) : undefined;
       const avatarUrl = conv.type === 'direct' ? other?.avatarUrl : conv.avatar;
-      const fallbackId = conv.type === 'direct' ? other?.userId : conv.id;
       return {
         id: conv.id,
         name: conversationTitle(conv, currentUserId),

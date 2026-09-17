@@ -46,7 +46,7 @@ const env = environmentLoader.loadConfig();
 // Nếu backend apiUrl có dạng http://localhost:3000/api, ta lấy origin
 const backendOrigin = env.apiUrl ? new URL(env.apiUrl).origin : '';
 
-const avatarFor = (id: string, avatarUrl?: string | null): string | undefined => {
+const avatarFor = (avatarUrl?: string | null): string | undefined => {
   if (avatarUrl) {
     if (avatarUrl.startsWith('http')) return avatarUrl;
     return `${backendOrigin}${avatarUrl}`;
@@ -303,7 +303,7 @@ const FriendsPage: React.FC = () => {
             >
               <List.Item.Meta
                 avatar={
-                  <Avatar src={avatarFor(req.friend.userId, req.friend.avatarUrl)} size={48}>
+                  <Avatar src={avatarFor(req.friend.avatarUrl)} size={48}>
                     {displayName(req.friend.username).charAt(0).toUpperCase()}
                   </Avatar>
                 }
@@ -337,7 +337,7 @@ const FriendsPage: React.FC = () => {
             >
               <List.Item.Meta
                 avatar={
-                  <Avatar src={avatarFor(req.friend.userId, req.friend.avatarUrl)} size={48}>
+                  <Avatar src={avatarFor(req.friend.avatarUrl)} size={48}>
                     {displayName(req.friend.username).charAt(0).toUpperCase()}
                   </Avatar>
                 }
@@ -394,7 +394,7 @@ const FriendsPage: React.FC = () => {
             >
               <List.Item.Meta
                 avatar={
-                  <Avatar src={avatarFor(foundUser.id, foundUser.avatarUrl)} size={48}>
+                  <Avatar src={avatarFor(foundUser.avatarUrl)} size={48}>
                     {foundUser.username.charAt(0).toUpperCase()}
                   </Avatar>
                 }
@@ -456,7 +456,7 @@ const FriendsPage: React.FC = () => {
             <List.Item.Meta
               style={{ alignItems: 'center' }}
               avatar={
-                <Avatar src={avatarFor(fr.friend.userId, fr.friend.avatarUrl)} size={48}>
+                <Avatar src={avatarFor(fr.friend.avatarUrl)} size={48}>
                   {displayName(fr.friend.username).charAt(0).toUpperCase()}
                 </Avatar>
               }

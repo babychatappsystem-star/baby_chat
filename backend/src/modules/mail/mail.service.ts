@@ -1,7 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
+import * as dns from 'dns';
 
+// Fix lỗi ENETUNREACH IPv6 trên Render (buộc Node.js ưu tiên phân giải tên miền ra IPv4)
+dns.setDefaultResultOrder('ipv4first');
 @Injectable()
 export class MailService {
   private transporter: nodemailer.Transporter;

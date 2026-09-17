@@ -11,7 +11,7 @@ const env = environmentLoader.loadConfig();
 
 const apiClient: AxiosInstance = axios.create({
   baseURL: env.apiUrl,
-  timeout: 10000,
+  timeout: 60000, // Tăng lên 60s để chờ Render backend "thức dậy" (Cold start)
   headers: { 'Content-Type': 'application/json' },
 });
 

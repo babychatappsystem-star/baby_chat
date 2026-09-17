@@ -31,7 +31,7 @@ const resolveAvatarUrl = (url?: string | null) => {
 interface IConversation {
   id: string;
   name: string;
-  avatar: string;
+  avatar?: string;
   lastMessage: string;
   timestamp: string;
   unread: number;

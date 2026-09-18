@@ -15,6 +15,7 @@ import { GetUserByFriendCodeUseCase } from 'src/modules/user/application/use-cas
 import { UpdateUserAvatarUseCase } from 'src/modules/user/application/use-cases/update-user-avatar.usecase';
 import { GetProfileUseCase } from 'src/modules/user/application/use-cases/get-profile.usecase';
 import { UpdatePresenceSettingsUseCase } from 'src/modules/user/application/use-cases/update-presence-settings.usecase';
+import { UpdateExpressiveChatSettingsUseCase } from 'src/modules/user/application/use-cases/update-expressive-chat-settings.usecase';
 import { GetFriendsPresenceUseCase } from 'src/modules/user/application/use-cases/get-friends-presence.usecase';
 import { FileModule } from 'src/modules/file/interfaces/file.module';
 import { FriendshipModule } from 'src/modules/friendship/interfaces/friendship.module';
@@ -37,6 +38,7 @@ import { FriendshipModule } from 'src/modules/friendship/interfaces/friendship.m
     UpdateUserAvatarUseCase,
     GetProfileUseCase,
     UpdatePresenceSettingsUseCase,
+    UpdateExpressiveChatSettingsUseCase,
     GetFriendsPresenceUseCase,
   ],
   // GetProfileUseCase export để AuthController dùng cho GET /auth/profile.

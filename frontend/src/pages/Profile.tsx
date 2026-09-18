@@ -11,6 +11,8 @@ import {
   Skeleton,
   Popconfirm,
   Switch,
+  Slider,
+  InputNumber,
 } from 'antd';
 import { useAntdApp } from '../hooks/useAntdApp';
 import {
@@ -25,8 +27,10 @@ import {
   CameraOutlined,
   EyeOutlined,
   EyeInvisibleOutlined,
+  SettingOutlined,
 } from '@ant-design/icons';
 import { updatePresenceSettings } from '../services/presenceService';
+import { updateExpressiveChatSettings } from '../services/userService';
 import { isSoundMuted, toggleSound } from '../lib/sound';
 import type { ProfileDTO } from '../types/api.types';
 import { authService } from '../services/authService';
@@ -63,6 +67,11 @@ const ProfilePage: React.FC = () => {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [hidePresence, setHidePresence] = useState(false);
   const [updatingPresence, setUpdatingPresence] = useState(false);
+
+  const [thresholds, setThresholds] = useState<number>(5);
+  const [transitionTime, setTransitionTime] = useState<number>(300);
+  const [updatingExpressiveSettings, setUpdatingExpressiveSettings] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -71,6 +80,8 @@ const ProfilePage: React.FC = () => {
       .then((p) => {
         setProfile(p);
         setHidePresence(p.hidePresence ?? false);
+        setThresholds(p.expressiveChatThresholds ?? 5);
+        setTransitionTime(p.expressiveChatTransitionTime ?? 300);
       })
       .catch((err) => message.error(getFriendErrorMessage(err, 'Failed to load profile')))
       .finally(() => setLoadingProfile(false));
@@ -139,10 +150,22 @@ const ProfilePage: React.FC = () => {
       await updatePresenceSettings(checked);
       setHidePresence(checked);
       message.success(checked ? 'Presence hidden' : 'Presence visible');
-    } catch (err) {
+    } catch {
       message.error('Failed to update presence');
     } finally {
       setUpdatingPresence(false);
+    }
+  };
+
+  const handleUpdateExpressiveSettings = async () => {
+    setUpdatingExpressiveSettings(true);
+    try {
+      await updateExpressiveChatSettings(thresholds, transitionTime);
+      message.success('Expressive chat settings saved');
+    } catch {
+      message.error('Failed to save settings');
+    } finally {
+      setUpdatingExpressiveSettings(false);
     }
   };
 
@@ -294,6 +317,62 @@ const ProfilePage: React.FC = () => {
             loading={updatingPresence}
           />
         </Flex>
+    </Card>
+
+      {/* Expressive Chat Settings */}
+      <Card style={{ marginBottom: 24 }}>
+        <Flex justify="space-between" align="flex-start" style={{ marginBottom: 16 }}>
+          <Space>
+            <SettingOutlined style={{ fontSize: 18, color: token.colorPrimary }} />
+            <div>
+              <Text strong style={{ display: 'block' }}>Expressive Chat Settings</Text>
+              <Text type="secondary" style={{ fontSize: 13 }}>
+                Customize your long-press emotion experience
+              </Text>
+            </div>
+          </Space>
+          <Button type="primary" loading={updatingExpressiveSettings} onClick={handleUpdateExpressiveSettings}>
+            Save
+          </Button>
+        </Flex>
+
+        <div style={{ paddingLeft: 30 }}>
+          <Text strong>Number of emotion thresholds</Text>
+          <Flex align="center" gap={16} style={{ marginTop: 8, marginBottom: 16 }}>
+            <Slider
+              min={2}
+              max={5}
+              onChange={setThresholds}
+              value={thresholds}
+              style={{ flex: 1 }}
+            />
+            <InputNumber
+              min={2}
+              max={5}
+              value={thresholds}
+              onChange={(val) => setThresholds(val || 5)}
+            />
+          </Flex>
+
+          <Text strong>Transition time between thresholds (ms)</Text>
+          <Flex align="center" gap={16} style={{ marginTop: 8 }}>
+            <Slider
+              min={100}
+              max={2000}
+              step={50}
+              onChange={setTransitionTime}
+              value={transitionTime}
+              style={{ flex: 1 }}
+            />
+            <InputNumber
+              min={100}
+              max={2000}
+              step={50}
+              value={transitionTime}
+              onChange={(val) => setTransitionTime(val || 300)}
+            />
+          </Flex>
+        </div>
       </Card>
 
       {/* Đăng xuất */}

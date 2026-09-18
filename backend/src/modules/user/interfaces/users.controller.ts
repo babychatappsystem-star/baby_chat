@@ -8,6 +8,7 @@ import { RegenerateFriendCodeUseCase } from 'src/modules/user/application/use-ca
 import { GetUserByFriendCodeUseCase } from 'src/modules/user/application/use-cases/get-user-by-friend-code.usecase';
 import { UpdateUserAvatarUseCase } from 'src/modules/user/application/use-cases/update-user-avatar.usecase';
 import { UpdatePresenceSettingsUseCase } from 'src/modules/user/application/use-cases/update-presence-settings.usecase';
+import { UpdateExpressiveChatSettingsUseCase } from 'src/modules/user/application/use-cases/update-expressive-chat-settings.usecase';
 import { GetFriendsPresenceUseCase } from 'src/modules/user/application/use-cases/get-friends-presence.usecase';
 import { FileUrlResolver } from 'src/modules/file/application/file-url-resolver.service';
 
@@ -16,6 +17,7 @@ import { UserPublicDto } from './dto/user-public.dto';
 import { FriendCodeResponseDto } from './dto/friend-code.dto';
 import { PaginationQueryDto, PaginatedUsersResponseDto } from './dto/pagination.dto';
 import { UpdatePresenceSettingsDto, FriendPresenceItemDto } from './dto/presence.dto';
+import { UpdateExpressiveChatSettingsDto } from './dto/update-expressive-chat-settings.dto';
 
 // Controller cho các endpoint quản lý user. POST /users public, các endpoint khác cần JWT.
 @ApiTags('users')
@@ -32,6 +34,7 @@ export class UsersController {
     private readonly updateUserAvatarUseCase: UpdateUserAvatarUseCase,
     private readonly fileUrlResolver: FileUrlResolver,
     private readonly updatePresenceSettingsUseCase: UpdatePresenceSettingsUseCase,
+    private readonly updateExpressiveChatSettingsUseCase: UpdateExpressiveChatSettingsUseCase,
     private readonly getFriendsPresenceUseCase: GetFriendsPresenceUseCase,
   ) {}
 
@@ -156,6 +159,20 @@ export class UsersController {
   ): Promise<{ hidePresence: boolean }> {
     await this.updatePresenceSettingsUseCase.execute(userId, dto.hidePresence);
     return { hidePresence: dto.hidePresence };
+  }
+
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Cập nhật cài đặt Expressive Chat' })
+  @ApiResponse({ status: 200 })
+  // PATCH /users/me/expressive-chat — cập nhật settings expressive chat
+  @Patch('me/expressive-chat')
+  async updateMyExpressiveChatSettings(
+    @CurrentUser('userId') userId: string,
+    @Body() dto: UpdateExpressiveChatSettingsDto,
+  ): Promise<UpdateExpressiveChatSettingsDto> {
+    await this.updateExpressiveChatSettingsUseCase.execute(userId, dto.thresholds, dto.transitionTime);
+    return dto;
   }
 
   @ApiBearerAuth('access-token')

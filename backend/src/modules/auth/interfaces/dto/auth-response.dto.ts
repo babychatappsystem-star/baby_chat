@@ -58,6 +58,12 @@ export class ProfileResponseDto {
 
   @ApiProperty({ example: ['user'], required: false, type: [String] })
   roles?: string[];
+
+  @ApiPropertyOptional({ example: 5 })
+  expressiveChatThresholds?: number;
+
+  @ApiPropertyOptional({ example: 300 })
+  expressiveChatTransitionTime?: number;
 }
 
 // Response cho /auth/logout.

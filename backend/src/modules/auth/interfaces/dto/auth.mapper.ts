@@ -30,6 +30,8 @@ export class AuthMapper {
       avatarUrl: result.avatarUrl,
       thumbnailUrl: result.thumbnailUrl,
       hidePresence: result.user.hidePresence,
+      expressiveChatThresholds: result.user.expressiveChatThresholds,
+      expressiveChatTransitionTime: result.user.expressiveChatTransitionTime,
       roles,
     };
   }

@@ -18,6 +18,8 @@ export abstract class IUserRepository {
   abstract updateLastSeen(userId: string, date: Date): Promise<void>;
   // Toggle ẩn trạng thái. Caller chịu trách nhiệm emit WS event sau khi gọi.
   abstract updateHidePresence(userId: string, hide: boolean): Promise<void>;
+  // Cập nhật cấu hình Expressive Chat.
+  abstract updateExpressiveChatSettings(userId: string, thresholds: number, transitionTime: number): Promise<void>;
 }
 
 export const USER_REPOSITORY = IUserRepository;

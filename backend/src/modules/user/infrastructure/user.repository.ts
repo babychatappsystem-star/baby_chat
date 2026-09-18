@@ -108,4 +108,12 @@ export class UserRepository implements IUserRepository {
   async updateHidePresence(userId: string, hide: boolean): Promise<void> {
     await this.userModel.updateOne({ _id: userId }, { $set: { hidePresence: hide } });
   }
+
+  // Cập nhật cấu hình Expressive Chat
+  async updateExpressiveChatSettings(userId: string, thresholds: number, transitionTime: number): Promise<void> {
+    await this.userModel.updateOne(
+      { _id: userId },
+      { $set: { expressiveChatThresholds: thresholds, expressiveChatTransitionTime: transitionTime } }
+    );
+  }
 }

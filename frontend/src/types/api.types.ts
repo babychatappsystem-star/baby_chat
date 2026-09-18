@@ -23,6 +23,8 @@ export interface ProfileDTO {
   avatarUrl?: string | null;
   thumbnailUrl?: string | null;
   hidePresence?: boolean;
+  expressiveChatThresholds?: number;
+  expressiveChatTransitionTime?: number;
 }
 
 // ── Files ──

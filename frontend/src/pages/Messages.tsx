@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Phone, Video, MoreVertical, Smile, Paperclip, MessageCircle, Reply, X } from 'lucide-react';
-import { Input, Button, Badge, Avatar, Tooltip, Typography, Space, Spin, Popover } from 'antd';
+import { Input, Button, Badge, Avatar, Tooltip, Typography, Space, Spin, Popover, message as antdMessage } from 'antd';
 import EmojiPicker, { Theme, type EmojiClickData } from 'emoji-picker-react';
 import { SearchOutlined, SendOutlined, TeamOutlined, UserOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -163,6 +163,24 @@ const MessagesPage: React.FC = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const { presenceMap } = React.useContext(PresenceContext);
   const selectedPresence = usePresence(selectedConversation?.otherUserId);
+
+  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+  const highlightTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleScrollToOriginal = useCallback((replyId?: string) => {
+    if (!replyId) return;
+    const el = document.getElementById(`msg-${replyId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setHighlightedMessageId(replyId);
+      if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+      highlightTimerRef.current = setTimeout(() => {
+        setHighlightedMessageId(null);
+      }, 1500);
+    } else {
+      antdMessage.info('Original message is not in the current view');
+    }
+  }, []);
 
   useEffect(() => {
     authService
@@ -658,22 +676,27 @@ const MessagesPage: React.FC = () => {
 
                   <div style={{ maxWidth: 460 }}>
                     {/* Bubble */}
-                    <Tooltip title={msg.timestamp} placement={isMe ? 'left' : 'right'}>
+                    <Tooltip title={msg.timestamp} placement="top" mouseEnterDelay={0.4}>
                       <div
+                        id={`msg-${msg.id}`}
                         style={{
                           padding: '9px 14px',
                           borderRadius: isMe 
                             ? `18px ${isFirstInGroup ? '18px' : '4px'} 4px 18px` 
                             : `${isFirstInGroup ? '18px' : '4px'} 18px 18px 4px`,
                           background: isMe ? token.colorPrimary : token.colorBgContainer,
-                          border: isMe ? 'none' : `1px solid ${token.colorBorderSecondary}`,
-                          boxShadow: '0 1px 3px rgba(0,0,0,0.07)',
+                          border: isMe ? 'none' : `1px solid ${highlightedMessageId === msg.id ? token.colorPrimary : token.colorBorderSecondary}`,
+                          boxShadow: highlightedMessageId === msg.id
+                            ? `0 0 0 3px ${token.colorPrimary}, 0 4px 14px rgba(232, 56, 90, 0.4)`
+                            : '0 1px 3px rgba(0,0,0,0.07)',
+                          transition: 'box-shadow 0.3s ease, border-color 0.3s ease',
                           wordBreak: 'break-word',
                         }}
                       >
                         {/* Quoted Message Snippet */}
                         {msg.replySnippet && (
                           <div
+                            onClick={() => handleScrollToOriginal(msg.replyId)}
                             style={{
                               display: 'flex',
                               flexDirection: 'column',
@@ -686,7 +709,9 @@ const MessagesPage: React.FC = () => {
                               borderLeft: `3px solid ${isMe ? 'rgba(255, 255, 255, 0.9)' : token.colorPrimary}`,
                               cursor: 'pointer',
                               userSelect: 'none',
+                              transition: 'opacity 0.2s',
                             }}
+                            title="Click to view original message"
                           >
                             <span
                               style={{

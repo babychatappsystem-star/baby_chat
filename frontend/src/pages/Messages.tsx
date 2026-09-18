@@ -436,10 +436,20 @@ const MessagesPage: React.FC = () => {
               <Text strong style={{ display: 'block', fontSize: 15 }}>
                 {selectedConversation?.name || ''}
               </Text>
-              <Text type="secondary" style={{ fontSize: 12 }}>
+              <Text type="secondary" style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
                 {selectedConversation?.type === 'group'
                   ? `${selectedConversation.memberCount} members`
-                  : selectedPresence.label || 'No information'}
+                  : (
+                    <>
+                      {selectedPresence.label && (
+                        <div style={{
+                          width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+                          background: selectedPresence.online ? token.colorSuccess : token.colorTextPlaceholder
+                        }} />
+                      )}
+                      {selectedPresence.label || 'No information'}
+                    </>
+                  )}
               </Text>
             </div>
           </Space>

@@ -627,6 +627,62 @@ const MessagesPage: React.FC = () => {
 
               const separator = getTimeSeparator(msg.rawDate, prevMsg?.rawDate);
 
+              const hasReactions = Object.keys(groupedReactions).length > 0;
+
+              const messageActions = (
+                <div
+                  className="message-actions"
+                  style={{
+                    opacity: 0,
+                    transition: 'opacity 0.2s',
+                    alignSelf: hasReactions ? 'flex-start' : 'center',
+                    marginTop: hasReactions ? 4 : 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                  }}
+                >
+                  <Tooltip title="Reply">
+                    <Button
+                      type="text"
+                      shape="circle"
+                      icon={<Reply size={16} />}
+                      style={{ color: token.colorTextSecondary }}
+                      onClick={() => {
+                        const senderName = isMe ? 'You' : (senderParticipant?.username || 'User');
+                        setReplyingTo({
+                          id: msg.id,
+                          text: msg.text,
+                          senderName,
+                        });
+                        inputRef.current?.focus();
+                      }}
+                    />
+                  </Tooltip>
+                  <Popover
+                    content={
+                      <EmojiPicker
+                        theme={isDark ? Theme.DARK : Theme.LIGHT}
+                        onEmojiClick={(emojiData: EmojiClickData) => handleReact(msg.id, emojiData.emoji)}
+                        width={320}
+                        height={400}
+                        style={{ border: 'none' }}
+                      />
+                    }
+                    overlayInnerStyle={{ padding: 0, overflow: 'hidden', borderRadius: 8 }}
+                    trigger="click"
+                    placement={isMe ? 'left' : 'right'}
+                  >
+                    <Button
+                      type="text"
+                      shape="circle"
+                      icon={<Smile size={16} />}
+                      style={{ color: token.colorTextSecondary }}
+                    />
+                  </Popover>
+                </div>
+              );
+
               return (
                 <React.Fragment key={msg.id}>
                 {separator && (
@@ -646,7 +702,7 @@ const MessagesPage: React.FC = () => {
                   className="message-row"
                   style={{
                     display: 'flex',
-                    marginBottom: isLastInGroup ? 12 : 2,
+                    marginBottom: isLastInGroup ? 12 : (hasReactions ? 6 : 2),
                     justifyContent: isMe ? 'flex-end' : 'flex-start',
                     alignItems: 'flex-end',
                     gap: 8,
@@ -674,7 +730,17 @@ const MessagesPage: React.FC = () => {
                     </div>
                   )}
 
-                  <div style={{ maxWidth: 460 }}>
+                  {/* Đối với tin nhắn của chính mình (isMe): Hiển thị button reply & icon bên TRÁI tin nhắn */}
+                  {isMe && messageActions}
+
+                  <div
+                    style={{
+                      maxWidth: 460,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: isMe ? 'flex-end' : 'flex-start',
+                    }}
+                  >
                     {/* Bubble */}
                     <Tooltip title={msg.timestamp} placement="top" mouseEnterDelay={0.4}>
                       <div
@@ -744,105 +810,55 @@ const MessagesPage: React.FC = () => {
                         </Text>
                       </div>
                     </Tooltip>
+
+                    {/* Reactions Display (bên dưới bong bóng, căn trái theo mép bong bóng) */}
+                    {hasReactions && (
+                      <div
+                        style={{
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          alignSelf: 'flex-start',
+                          marginTop: -6,
+                          marginLeft: 4,
+                          gap: 4,
+                          zIndex: 1,
+                          position: 'relative',
+                        }}
+                      >
+                        {Object.entries(groupedReactions).map(([emoji, userIds]) => {
+                          const iReacted = userIds.includes(currentUserId);
+                          return (
+                            <Tooltip key={emoji} title={userIds.length + ' reactions'}>
+                              <div
+                                onClick={() => handleReact(msg.id, emoji)}
+                                style={{
+                                  padding: '2px 6px',
+                                  borderRadius: 12,
+                                  background: iReacted ? token.colorPrimaryBg : token.colorBgContainer,
+                                  border: `1px solid ${iReacted ? token.colorPrimary : token.colorBorderSecondary}`,
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 4,
+                                  fontSize: 12,
+                                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                                }}
+                              >
+                                <span>{emoji}</span>
+                                <span style={{ color: iReacted ? token.colorPrimary : token.colorTextSecondary, fontWeight: iReacted ? 600 : 'normal' }}>
+                                  {userIds.length}
+                                </span>
+                              </div>
+                            </Tooltip>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                   
-                  {/* Hover action to show reply button and emoji picker */}
-                  <div
-                    className="message-actions"
-                    style={{
-                      opacity: 0,
-                      transition: 'opacity 0.2s',
-                      alignSelf: 'center',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 2,
-                    }}
-                  >
-                    <Tooltip title="Reply">
-                      <Button
-                        type="text"
-                        shape="circle"
-                        icon={<Reply size={16} />}
-                        style={{ color: token.colorTextSecondary }}
-                        onClick={() => {
-                          const senderName = isMe ? 'You' : (senderParticipant?.username || 'User');
-                          setReplyingTo({
-                            id: msg.id,
-                            text: msg.text,
-                            senderName,
-                          });
-                          inputRef.current?.focus();
-                        }}
-                      />
-                    </Tooltip>
-                    <Popover
-                      content={
-                        <EmojiPicker
-                          theme={isDark ? Theme.DARK : Theme.LIGHT}
-                          onEmojiClick={(emojiData: EmojiClickData) => handleReact(msg.id, emojiData.emoji)}
-                          width={320}
-                          height={400}
-                          style={{ border: 'none' }}
-                        />
-                      }
-                      overlayInnerStyle={{ padding: 0, overflow: 'hidden', borderRadius: 8 }}
-                      trigger="click"
-                      placement={isMe ? 'left' : 'right'}
-                    >
-                      <Button
-                        type="text"
-                        shape="circle"
-                        icon={<Smile size={16} />}
-                        style={{ color: token.colorTextSecondary }}
-                      />
-                    </Popover>
-                  </div>
+                  {/* Đối với tin nhắn đối phương (!isMe): Hiển thị button reply & icon bên PHẢI tin nhắn */}
+                  {!isMe && messageActions}
                 </div>
-                
-                {/* Reactions Display (below message bubble) */}
-                {Object.keys(groupedReactions).length > 0 && (
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: isMe ? 'flex-end' : 'flex-start',
-                      marginTop: -10,
-                      marginBottom: 8,
-                      marginLeft: isMe ? 0 : 40,
-                      marginRight: isMe ? 40 : 0,
-                      gap: 4,
-                      zIndex: 1,
-                      position: 'relative',
-                    }}
-                  >
-                    {Object.entries(groupedReactions).map(([emoji, userIds]) => {
-                      const iReacted = userIds.includes(currentUserId);
-                      return (
-                        <Tooltip key={emoji} title={userIds.length + ' reactions'}>
-                          <div
-                            onClick={() => handleReact(msg.id, emoji)}
-                            style={{
-                              padding: '2px 6px',
-                              borderRadius: 12,
-                              background: iReacted ? token.colorPrimaryBg : token.colorBgContainer,
-                              border: `1px solid ${iReacted ? token.colorPrimary : token.colorBorderSecondary}`,
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 4,
-                              fontSize: 12,
-                              boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                            }}
-                          >
-                            <span>{emoji}</span>
-                            <span style={{ color: iReacted ? token.colorPrimary : token.colorTextSecondary, fontWeight: iReacted ? 600 : 'normal' }}>
-                              {userIds.length}
-                            </span>
-                          </div>
-                        </Tooltip>
-                      );
-                    })}
-                  </div>
-                )}
                 </React.Fragment>
               );
             })

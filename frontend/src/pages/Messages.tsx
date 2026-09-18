@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Phone, Video, MoreVertical, Smile, Paperclip, MessageCircle } from 'lucide-react';
 import { Input, Button, Badge, Avatar, Tooltip, Typography, Space, Spin, Popover } from 'antd';
-import EmojiPicker, { type EmojiClickData } from 'emoji-picker-react';
+import EmojiPicker, { Theme, type EmojiClickData } from 'emoji-picker-react';
 import { SearchOutlined, SendOutlined, TeamOutlined, UserOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
@@ -13,6 +13,7 @@ dayjs.extend(isYesterday);
 import { authService } from '../services/authService';
 import type { ConversationDTO, MessageDTO, ConversationParticipant } from '../types/api.types';
 import { useThemeToken } from '../hooks/useThemeToken';
+import { useDarkMode } from '../hooks/useDarkMode';
 import { useSocketEvent } from '../hooks/useSocketEvent';
 import { useSocketConnect } from '../hooks/useSocketConnect';
 import { WS_EVENTS } from '../lib/wsEvents';
@@ -122,6 +123,7 @@ const EmptyChatState: React.FC<{ name: string; onSend: () => void }> = ({ name, 
 
 const MessagesPage: React.FC = () => {
   const token = useThemeToken();
+  const isDark = useDarkMode();
   const [currentUserId, setCurrentUserId] = useState<string>(
     () => localStorage.getItem('userId') ?? ''
   );
@@ -633,11 +635,14 @@ const MessagesPage: React.FC = () => {
                     <Popover
                       content={
                         <EmojiPicker
+                          theme={isDark ? Theme.DARK : Theme.LIGHT}
                           onEmojiClick={(emojiData: EmojiClickData) => handleReact(msg.id, emojiData.emoji)}
-                          width={300}
+                          width={320}
                           height={400}
+                          style={{ border: 'none' }}
                         />
                       }
+                      overlayInnerStyle={{ padding: 0, overflow: 'hidden', borderRadius: 8 }}
                       trigger="click"
                       placement={isMe ? 'left' : 'right'}
                     >

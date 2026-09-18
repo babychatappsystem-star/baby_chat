@@ -23,6 +23,7 @@ import {
   BellOutlined,
   BellFilled,
   CameraOutlined,
+  EyeOutlined,
   EyeInvisibleOutlined,
 } from '@ant-design/icons';
 import { updatePresenceSettings } from '../services/presenceService';
@@ -55,6 +56,7 @@ const ProfilePage: React.FC = () => {
 
   const [friendCode, setFriendCode] = useState('');
   const [loadingCode, setLoadingCode] = useState(true);
+  const [showFriendCode, setShowFriendCode] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [muted, setMuted] = useState(() => isSoundMuted());
 
@@ -232,11 +234,18 @@ const ProfilePage: React.FC = () => {
             }}
           >
             <Text strong style={{ fontSize: 24, letterSpacing: 3, fontFamily: 'monospace' }}>
-              {friendCode ? formatCode(friendCode) : '••••-••••'}
+              {friendCode ? (showFriendCode ? formatCode(friendCode) : '••••-••••') : '••••-••••'}
             </Text>
-            <Button icon={<CopyOutlined />} onClick={handleCopyCode} disabled={!friendCode}>
-              Sao chép
-            </Button>
+            <Space>
+              <Button
+                icon={showFriendCode ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+                onClick={() => setShowFriendCode(!showFriendCode)}
+                disabled={!friendCode}
+              />
+              <Button icon={<CopyOutlined />} onClick={handleCopyCode} disabled={!friendCode}>
+                Sao chép
+              </Button>
+            </Space>
           </Space>
         )}
         <Text type="secondary" style={{ display: 'block', marginTop: 12, fontSize: 13 }}>

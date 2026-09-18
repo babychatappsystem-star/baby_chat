@@ -738,7 +738,7 @@ const MessagesPage: React.FC = () => {
                     {EXPRESSIVE_EMOJIS[Math.min(emotionLevel, EXPRESSIVE_EMOJIS.length - 1)]}
                   </div>
                 )}
-                <Tooltip title="Hold for Expressive Chat">
+                <Tooltip title="Hold for Expressive Chat" placement="bottom">
                   <Button 
                     type="text" 
                     size="small" 

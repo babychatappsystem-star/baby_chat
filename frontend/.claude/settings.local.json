@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//d/Data/Phucuong.vo/message_app/**)",
+      "Bash(npm install *)",
+      "Bash(npx tsc *)",
+      "Bash(npm uninstall *)"
+    ]
+  }
+}

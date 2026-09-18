@@ -8,18 +8,18 @@ import type {
   FriendshipRequestResult,
 } from '../types/api.types';
 
-// Map error code từ server → message tiếng Việt hiển thị cho user.
+// Map error code from server → English message displayed to user.
 const ERROR_MESSAGES: Record<string, string> = {
-  UserNotFound:             'Không tìm thấy người dùng này',
-  CannotFriendSelf:         'Bạn không thể kết bạn với chính mình',
-  FriendshipAlreadyExists:  'Hai bạn đã là bạn bè hoặc đang có lời mời chờ duyệt',
-  FriendshipBlocked:        'Không thể gửi lời mời do một trong hai đã chặn bên kia',
-  FriendshipNotFound:       'Lời mời/quan hệ không tồn tại',
-  NotFriendshipRecipient:   'Chỉ người nhận lời mời mới được thực hiện thao tác này',
+  UserNotFound:             'User not found',
+  CannotFriendSelf:         'You cannot friend yourself',
+  FriendshipAlreadyExists:  'You are already friends or have a pending request',
+  FriendshipBlocked:        'Cannot send request because one of you has blocked the other',
+  FriendshipNotFound:       'Friendship/request not found',
+  NotFriendshipRecipient:   'Only the recipient can perform this action',
 };
 
 // Trích message hiển thị từ một lỗi axios (map theo error code friendship).
-export const getFriendErrorMessage = (error: unknown, fallback = 'Đã có lỗi xảy ra'): string =>
+export const getFriendErrorMessage = (error: unknown, fallback = 'An error occurred'): string =>
   getApiErrorMessage(error, fallback, ERROR_MESSAGES);
 
 export const friendService = {

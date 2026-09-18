@@ -109,7 +109,7 @@ const FriendsPage: React.FC = () => {
       setIncoming(inc);
       setOutgoing(out);
     } catch (err) {
-      message.error(getFriendErrorMessage(err, 'Không tải được lời mời'));
+      message.error(getFriendErrorMessage(err, 'Failed to load requests'));
     } finally {
       setLoadingRequests(false);
     }
@@ -120,7 +120,7 @@ const FriendsPage: React.FC = () => {
     try {
       setFriends(await friendService.getFriends());
     } catch (err) {
-      message.error(getFriendErrorMessage(err, 'Không tải được danh sách bạn'));
+      message.error(getFriendErrorMessage(err, 'Failed to load friend list'));
     } finally {
       setLoadingFriends(false);
     }
@@ -130,7 +130,7 @@ const FriendsPage: React.FC = () => {
     friendService
       .getMyFriendCode()
       .then(setMyCode)
-      .catch((err) => message.error(getFriendErrorMessage(err, 'Không lấy được mã kết bạn')));
+      .catch((err) => message.error(getFriendErrorMessage(err, 'Failed to get friend code')));
     loadRequests();
     loadFriends();
   }, [loadRequests, loadFriends, message]);
@@ -143,13 +143,13 @@ const FriendsPage: React.FC = () => {
 
   // Realtime: có người gửi lời mời kết bạn cho mình.
   useSocketEvent(WS_EVENTS.FRIENDSHIP_REQUEST_RECEIVED, (payload) => {
-    message.info(`${payload.requesterUsername} đã gửi cho bạn lời mời kết bạn`);
+    message.info(`${payload.requesterUsername} sent you a friend request`);
     loadRequests();
   });
 
   // Realtime: lời mời mình gửi vừa được chấp nhận (BE cũng tự tạo conversation).
   useSocketEvent(WS_EVENTS.FRIENDSHIP_ACCEPTED, (payload) => {
-    message.success(`${payload.recipientUsername} đã chấp nhận lời mời kết bạn`);
+    message.success(`${payload.recipientUsername} accepted your friend request`);
     loadRequests();
     loadFriends();
   });
@@ -158,9 +158,9 @@ const FriendsPage: React.FC = () => {
   const handleCopyCode = async () => {
     try {
       await navigator.clipboard.writeText(myCode);
-      message.success('Đã sao chép mã kết bạn');
+      message.success('Friend code copied');
     } catch {
-      message.error('Không sao chép được');
+      message.error('Failed to copy');
     }
   };
 
@@ -168,9 +168,9 @@ const FriendsPage: React.FC = () => {
     setRegenerating(true);
     try {
       setMyCode(await friendService.regenerateFriendCode());
-      message.success('Đã tạo mã mới');
+      message.success('New code generated');
     } catch (err) {
-      message.error(getFriendErrorMessage(err, 'Không tạo được mã mới'));
+      message.error(getFriendErrorMessage(err, 'Failed to generate new code'));
     } finally {
       setRegenerating(false);
     }
@@ -190,7 +190,7 @@ const FriendsPage: React.FC = () => {
           : await friendService.getUserByFriendCode(q);
       setFoundUser(result);
     } catch (err) {
-      message.error(getFriendErrorMessage(err, 'Tìm kiếm thất bại'));
+      message.error(getFriendErrorMessage(err, 'Search failed'));
     } finally {
       setFinding(false);
     }
@@ -200,13 +200,13 @@ const FriendsPage: React.FC = () => {
     setSendingTo(user.id);
     try {
       await friendService.sendRequestByUserId(user.id);
-      message.success(`Đã gửi lời mời tới ${user.username}`);
+      message.success(`Request sent to ${user.username}`);
       setFoundUser(null);
       setQuery('');
       setSearchedOnce(false);
       loadRequests(); // refresh outgoing
     } catch (err) {
-      message.error(getFriendErrorMessage(err, 'Gửi lời mời thất bại'));
+      message.error(getFriendErrorMessage(err, 'Failed to send request'));
     } finally {
       setSendingTo(null);
     }
@@ -218,10 +218,10 @@ const FriendsPage: React.FC = () => {
     try {
       await friendService.acceptRequest(req.id);
       setIncoming((prev) => prev.filter((r) => r.id !== req.id));
-      message.success(`Đã kết bạn với ${displayName(req.friend.username)}`);
+      message.success(`You are now friends with ${displayName(req.friend.username)}`);
       loadFriends(); // bạn mới + conversation mới
     } catch (err) {
-      message.error(getFriendErrorMessage(err, 'Chấp nhận thất bại'));
+      message.error(getFriendErrorMessage(err, 'Failed to accept request'));
     } finally {
       setBusy(req.id, false);
     }
@@ -233,7 +233,7 @@ const FriendsPage: React.FC = () => {
       await friendService.rejectRequest(req.id);
       setIncoming((prev) => prev.filter((r) => r.id !== req.id));
     } catch (err) {
-      message.error(getFriendErrorMessage(err, 'Từ chối thất bại'));
+      message.error(getFriendErrorMessage(err, 'Failed to reject request'));
     } finally {
       setBusy(req.id, false);
     }
@@ -245,7 +245,7 @@ const FriendsPage: React.FC = () => {
       await friendService.cancelRequest(req.id);
       setOutgoing((prev) => prev.filter((r) => r.id !== req.id));
     } catch (err) {
-      message.error(getFriendErrorMessage(err, 'Hủy lời mời thất bại'));
+      message.error(getFriendErrorMessage(err, 'Failed to cancel request'));
     } finally {
       setBusy(req.id, false);
     }
@@ -256,9 +256,9 @@ const FriendsPage: React.FC = () => {
     try {
       await friendService.unfriend(fr.friend.userId);
       setFriends((prev) => prev.filter((f) => f.id !== fr.id));
-      message.success(`Đã hủy kết bạn với ${displayName(fr.friend.username)}`);
+      message.success(`Unfriended ${displayName(fr.friend.username)}`);
     } catch (err) {
-      message.error(getFriendErrorMessage(err, 'Hủy kết bạn thất bại'));
+      message.error(getFriendErrorMessage(err, 'Failed to unfriend'));
     } finally {
       setBusy(fr.id, false);
     }
@@ -278,7 +278,7 @@ const FriendsPage: React.FC = () => {
         <List
           loading={loadingRequests}
           dataSource={incoming}
-          locale={{ emptyText: 'Không có lời mời nào đang chờ duyệt' }}
+          locale={{ emptyText: 'No pending requests' }}
           renderItem={(req) => (
             <List.Item
               actions={[
@@ -308,7 +308,7 @@ const FriendsPage: React.FC = () => {
                   </Avatar>
                 }
                 title={<Text strong>{displayName(req.friend.username)}</Text>}
-                description="Muốn kết bạn với bạn"
+                description="Wants to be your friend"
               />
             </List.Item>
           )}
@@ -320,7 +320,7 @@ const FriendsPage: React.FC = () => {
         <List
           loading={loadingRequests}
           dataSource={outgoing}
-          locale={{ emptyText: 'Bạn chưa gửi lời mời nào' }}
+          locale={{ emptyText: 'No sent requests' }}
           renderItem={(req) => (
             <List.Item
               actions={[
@@ -342,7 +342,7 @@ const FriendsPage: React.FC = () => {
                   </Avatar>
                 }
                 title={<Text strong>{displayName(req.friend.username)}</Text>}
-                description={<Tag color="orange">Đang chờ duyệt</Tag>}
+                description={<Tag color="orange">Pending</Tag>}
               />
             </List.Item>
           )}
@@ -355,24 +355,24 @@ const FriendsPage: React.FC = () => {
     <Flex vertical gap={16} style={{ width: '100%', maxWidth: 460 }}>
       <Space>
         <Button type={findMode === 'code' ? 'primary' : 'default'} onClick={() => { setFindMode('code'); setSearchedOnce(false); setFoundUser(null); }}>
-          Bằng mã kết bạn
+          By friend code
         </Button>
         <Button type={findMode === 'email' ? 'primary' : 'default'} onClick={() => { setFindMode('email'); setSearchedOnce(false); setFoundUser(null); }}>
-          Bằng email
+          By email
         </Button>
       </Space>
 
       <Space.Compact style={{ width: '100%' }}>
         <Input
-          placeholder={findMode === 'code' ? 'Nhập mã kết bạn (vd A7F2-K9XP)' : 'Nhập địa chỉ email'}
+          placeholder={findMode === 'code' ? 'Enter friend code (e.g. A7F2-K9XP)' : 'Enter email address'}
           prefix={<SearchOutlined style={{ color: token.colorTextPlaceholder }} />}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onPressEnter={handleFind}
           allowClear
-          aria-label="Tìm người để kết bạn"
+          aria-label="Find friends"
         />
-        <Button type="primary" loading={finding} onClick={handleFind}>Tìm</Button>
+        <Button type="primary" loading={finding} onClick={handleFind}>Search</Button>
       </Space.Compact>
 
       {searchedOnce && !finding && (
@@ -388,7 +388,7 @@ const FriendsPage: React.FC = () => {
                   loading={sendingTo === foundUser.id}
                   onClick={() => handleSendRequest(foundUser)}
                 >
-                  Gửi lời mời
+                  Send request
                 </Button>,
               ]}
             >
@@ -406,7 +406,7 @@ const FriendsPage: React.FC = () => {
         ) : (
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={findMode === 'code' ? 'Không tìm thấy ai với mã này' : 'Không tìm thấy ai với email này'}
+            description={findMode === 'code' ? 'No one found with this code' : 'No one found with this email'}
           />
         )
       )}
@@ -416,18 +416,18 @@ const FriendsPage: React.FC = () => {
   const friendsTab = (
     <>
       <Input
-        placeholder="Tìm trong danh sách bạn"
+        placeholder="Search friends"
         prefix={<SearchOutlined style={{ color: token.colorTextPlaceholder }} />}
         value={friendSearch}
         onChange={(e) => setFriendSearch(e.target.value)}
         allowClear
         style={{ marginBottom: 16, borderRadius: 999, maxWidth: 360 }}
-        aria-label="Tìm bạn"
+        aria-label="Find a friend"
       />
       <List
         loading={loadingFriends}
         dataSource={filteredFriends}
-        locale={{ emptyText: friendSearch ? 'Không có bạn nào khớp' : 'Bạn chưa có người bạn nào' }}
+        locale={{ emptyText: friendSearch ? 'No matching friends' : 'You have no friends yet' }}
         renderItem={(fr) => (
           <List.Item
             actions={[
@@ -436,19 +436,19 @@ const FriendsPage: React.FC = () => {
                 icon={<MessageOutlined />}
                 onClick={() => navigate('/messages')}
               >
-                Nhắn tin
+                Message
               </Button>,
               <Popconfirm
                 key="unfriend"
-                title="Hủy kết bạn?"
-                description={`Bạn chắc chắn muốn hủy kết bạn với ${displayName(fr.friend.username)}?`}
-                okText="Hủy kết bạn"
-                cancelText="Không"
+                title="Unfriend?"
+                description={`Are you sure you want to unfriend ${displayName(fr.friend.username)}?`}
+                okText="Unfriend"
+                cancelText="No"
                 okButtonProps={{ danger: true }}
                 onConfirm={() => handleUnfriend(fr)}
               >
                 <Button danger icon={<UserDeleteOutlined />} loading={busyIds.has(fr.id)}>
-                  Hủy kết bạn
+                  Unfriend
                 </Button>
               </Popconfirm>,
             ]}
@@ -503,7 +503,7 @@ const FriendsPage: React.FC = () => {
         styles={{ body: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' } }}
       >
         <div>
-          <Text type="secondary" style={{ display: 'block', fontSize: 12 }}>Mã kết bạn của bạn</Text>
+          <Text type="secondary" style={{ display: 'block', fontSize: 12 }}>Your friend code</Text>
           <Text strong style={{ fontSize: 20, letterSpacing: 2, fontFamily: 'monospace' }}>
             {codeVisible && myCode ? formatCode(myCode) : '••••-••••'}
           </Text>
@@ -516,16 +516,16 @@ const FriendsPage: React.FC = () => {
         </div>
         <Space>
           <Button icon={<CopyOutlined />} onClick={handleCopyCode} disabled={!myCode}>
-            Sao chép
+            Copy
           </Button>
           <Popconfirm
-            title="Tạo mã mới?"
-            description="Mã cũ sẽ không còn dùng được nữa."
-            okText="Tạo mới"
-            cancelText="Không"
+            title="Generate new code?"
+            description="The old code will no longer work."
+            okText="Generate"
+            cancelText="Cancel"
             onConfirm={handleRegenerate}
           >
-            <Button icon={<ReloadOutlined />} loading={regenerating}>Tạo mã mới</Button>
+            <Button icon={<ReloadOutlined />} loading={regenerating}>Generate new code</Button>
           </Popconfirm>
         </Space>
       </Card>

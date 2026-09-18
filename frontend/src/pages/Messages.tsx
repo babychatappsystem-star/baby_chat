@@ -59,8 +59,8 @@ const getTimeSeparator = (currentRaw: string, prevRaw?: string): string | null =
   const prev = prevRaw ? dayjs(prevRaw) : null;
 
   if (!prev || !current.isSame(prev, 'day')) {
-    if (current.isToday()) return `Hôm nay ${current.format('HH:mm')}`;
-    if (current.isYesterday()) return `Hôm qua ${current.format('HH:mm')}`;
+    if (current.isToday()) return `Today ${current.format('HH:mm')}`;
+    if (current.isYesterday()) return `Yesterday ${current.format('HH:mm')}`;
     return current.format('DD/MM/YYYY HH:mm');
   }
 
@@ -108,13 +108,13 @@ const EmptyChatState: React.FC<{ name: string; onSend: () => void }> = ({ name, 
         <MessageCircle size={40} color={token.colorPrimary} strokeWidth={1.5} />
       </div>
       <div style={{ textAlign: 'center' }}>
-        <Title level={5} style={{ marginBottom: 4 }}>Bắt đầu cuộc trò chuyện</Title>
+        <Title level={5} style={{ marginBottom: 4 }}>Start a conversation</Title>
         <Text type="secondary">
-          Hãy gửi lời chào đầu tiên đến <Text strong>{name}</Text>!
+          Send your first greeting to <Text strong>{name}</Text>!
         </Text>
       </div>
       <Button type="primary" shape="round" icon={<SendOutlined />} onClick={onSend}>
-        Gửi lời chào 👋
+        Send a greeting 👋
       </Button>
     </div>
   );
@@ -157,7 +157,7 @@ const MessagesPage: React.FC = () => {
         id: conv.id,
         name: conversationTitle(conv, currentUserId),
         avatar: resolveAvatarUrl(avatarUrl),
-        lastMessage: conv.lastMessage || 'Chưa có tin nhắn',
+        lastMessage: conv.lastMessage || 'No messages yet',
         timestamp: formatTime(conv.lastMessageAt || conv.updatedAt),
         unread: 0,
         type: conv.type,
@@ -306,7 +306,7 @@ const MessagesPage: React.FC = () => {
   };
 
   const handleGreeting = () => {
-    setNewMessage(`Xin chào ${selectedConversation?.name ?? ''} 👋`);
+    setNewMessage(`Hello ${selectedConversation?.name ?? ''} 👋`);
     inputRef.current?.focus();
   };
 
@@ -325,7 +325,7 @@ const MessagesPage: React.FC = () => {
             </Badge>
           </div>
           <Input
-            placeholder="Tìm kiếm…"
+            placeholder="Search..."
             prefix={<SearchOutlined style={{ color: token.colorTextPlaceholder }} />}
             style={{ borderRadius: 999, background: token.colorFillQuaternary }}
             variant="borderless"
@@ -438,16 +438,16 @@ const MessagesPage: React.FC = () => {
               </Text>
               <Text type="secondary" style={{ fontSize: 12 }}>
                 {selectedConversation?.type === 'group'
-                  ? `${selectedConversation.memberCount} thành viên`
-                  : selectedPresence.label || 'Không có thông tin'}
+                  ? `${selectedConversation.memberCount} members`
+                  : selectedPresence.label || 'No information'}
               </Text>
             </div>
           </Space>
           <Space size={2}>
-            <Tooltip title="Tính năng sắp ra mắt">
+            <Tooltip title="Feature coming soon">
               <Button type="text" shape="circle" icon={<Phone size={18} />} aria-label="Voice call" disabled />
             </Tooltip>
-            <Tooltip title="Tính năng sắp ra mắt">
+            <Tooltip title="Feature coming soon">
               <Button type="text" shape="circle" icon={<Video size={18} />} aria-label="Video call" disabled />
             </Tooltip>
             <Tooltip title="More options">
@@ -651,17 +651,17 @@ const MessagesPage: React.FC = () => {
               background: token.colorFillQuaternary,
               transition: 'border-color 0.2s',
             }}>
-              <Tooltip title="Tính năng sắp ra mắt">
+              <Tooltip title="Feature coming soon">
                 <Button type="text" size="small" icon={<Paperclip size={18} />} aria-label="Attach file" disabled />
               </Tooltip>
-              <Tooltip title="Tính năng sắp ra mắt">
+              <Tooltip title="Feature coming soon">
                 <Button type="text" size="small" icon={<Smile size={18} />} aria-label="Emoji" disabled />
               </Tooltip>
               <input
                 ref={inputRef}
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Nhập tin nhắn…"
+                placeholder="Type a message..."
                 aria-label="Message input"
                 style={{
                   flex: 1,

@@ -72,22 +72,22 @@ const ProfilePage: React.FC = () => {
         setProfile(p);
         setHidePresence(p.hidePresence ?? false);
       })
-      .catch((err) => message.error(getFriendErrorMessage(err, 'Không tải được thông tin tài khoản')))
+      .catch((err) => message.error(getFriendErrorMessage(err, 'Failed to load profile')))
       .finally(() => setLoadingProfile(false));
 
     friendService
       .getMyFriendCode()
       .then(setFriendCode)
-      .catch((err) => message.error(getFriendErrorMessage(err, 'Không lấy được mã kết bạn')))
+      .catch((err) => message.error(getFriendErrorMessage(err, 'Failed to get friend code')))
       .finally(() => setLoadingCode(false));
   }, [message]);
 
   const handleCopyCode = async () => {
     try {
       await navigator.clipboard.writeText(friendCode);
-      message.success('Đã sao chép mã kết bạn');
+      message.success('Friend code copied');
     } catch {
-      message.error('Không sao chép được');
+      message.error('Failed to copy');
     }
   };
 
@@ -95,9 +95,9 @@ const ProfilePage: React.FC = () => {
     setRegenerating(true);
     try {
       setFriendCode(await friendService.regenerateFriendCode());
-      message.success('Đã tạo mã mới');
+      message.success('New code generated');
     } catch (err) {
-      message.error(getFriendErrorMessage(err, 'Không tạo được mã mới'));
+      message.error(getFriendErrorMessage(err, 'Failed to generate new code'));
     } finally {
       setRegenerating(false);
     }
@@ -125,9 +125,9 @@ const ProfilePage: React.FC = () => {
       const updated = await authService.updateAvatar(uploaded.id);
       setProfile(updated);
       window.dispatchEvent(new CustomEvent('profile-updated', { detail: updated }));
-      message.success('Đã cập nhật ảnh đại diện');
+      message.success('Avatar updated');
     } catch (err) {
-      message.error(getFileErrorMessage(err, 'Cập nhật ảnh đại diện thất bại'));
+      message.error(getFileErrorMessage(err, 'Failed to update avatar'));
     } finally {
       setUploadingAvatar(false);
     }
@@ -138,9 +138,9 @@ const ProfilePage: React.FC = () => {
     try {
       await updatePresenceSettings(checked);
       setHidePresence(checked);
-      message.success(checked ? 'Đã bật ẩn trạng thái' : 'Đã tắt ẩn trạng thái');
+      message.success(checked ? 'Presence hidden' : 'Presence visible');
     } catch (err) {
-      message.error('Không thể cập nhật trạng thái');
+      message.error('Failed to update presence');
     } finally {
       setUpdatingPresence(false);
     }
@@ -148,7 +148,7 @@ const ProfilePage: React.FC = () => {
 
   return (
     <div style={{ maxWidth: 560, margin: '0 auto', padding: '24px 0' }}>
-      <Title level={2} style={{ marginBottom: 24 }}>Hồ sơ của tôi</Title>
+      <Title level={2} style={{ marginBottom: 24 }}>My Profile</Title>
 
       {/* Header card: avatar + tên + email */}
       <Card style={{ marginBottom: 24, textAlign: 'center' }}>
@@ -188,12 +188,12 @@ const ProfilePage: React.FC = () => {
       </Card>
 
       {/* Thông tin chi tiết */}
-      <Card title="Thông tin tài khoản" style={{ marginBottom: 24 }}>
+      <Card title="Account Information" style={{ marginBottom: 24 }}>
         {loadingProfile ? (
           <Skeleton active paragraph={{ rows: 3 }} title={false} />
         ) : (
           <Descriptions column={1} size="middle">
-            <Descriptions.Item label={<Space><UserOutlined />Tên người dùng</Space>}>
+            <Descriptions.Item label={<Space><UserOutlined />Username</Space>}>
               {profile?.username ?? '—'}
             </Descriptions.Item>
             <Descriptions.Item label={<Space><MailOutlined />Email</Space>}>
@@ -208,17 +208,17 @@ const ProfilePage: React.FC = () => {
 
       {/* Friend code */}
       <Card
-        title="Mã kết bạn"
+        title="Friend Code"
         style={{ marginBottom: 24 }}
         extra={
           <Popconfirm
-            title="Tạo mã mới?"
-            description="Mã cũ sẽ không còn dùng được nữa."
-            okText="Tạo mới"
-            cancelText="Không"
+            title="Generate new code?"
+            description="The old code will no longer work."
+            okText="Generate"
+            cancelText="Cancel"
             onConfirm={handleRegenerate}
           >
-            <Button type="text" icon={<ReloadOutlined />} loading={regenerating}>Tạo mã mới</Button>
+            <Button type="text" icon={<ReloadOutlined />} loading={regenerating}>Generate new code</Button>
           </Popconfirm>
         }
       >
@@ -243,13 +243,13 @@ const ProfilePage: React.FC = () => {
                 disabled={!friendCode}
               />
               <Button icon={<CopyOutlined />} onClick={handleCopyCode} disabled={!friendCode}>
-                Sao chép
+                Copy
               </Button>
             </Space>
           </Space>
         )}
         <Text type="secondary" style={{ display: 'block', marginTop: 12, fontSize: 13 }}>
-          Chia sẻ mã này để người khác gửi lời mời kết bạn cho bạn.
+          Share this code with others so they can send you a friend request.
         </Text>
       </Card>
 
@@ -259,9 +259,9 @@ const ProfilePage: React.FC = () => {
           <Space>
             {muted ? <BellFilled style={{ color: token.colorTextPlaceholder, fontSize: 18 }} /> : <BellOutlined style={{ fontSize: 18, color: token.colorPrimary }} />}
             <div>
-              <Text strong style={{ display: 'block' }}>Âm thanh thông báo</Text>
+              <Text strong style={{ display: 'block' }}>Notification Sound</Text>
               <Text type="secondary" style={{ fontSize: 13 }}>
-                {muted ? 'Đang tắt' : 'Đang bật'}
+                {muted ? 'Off' : 'On'}
               </Text>
             </div>
           </Space>
@@ -271,7 +271,7 @@ const ProfilePage: React.FC = () => {
             icon={muted ? <BellFilled /> : <BellOutlined />}
             onClick={() => setMuted(toggleSound())}
           >
-            {muted ? 'Bật âm thanh' : 'Tắt âm thanh'}
+            {muted ? 'Turn On Sound' : 'Turn Off Sound'}
           </Button>
         </Flex>
       </Card>
@@ -282,9 +282,9 @@ const ProfilePage: React.FC = () => {
           <Space>
             <EyeInvisibleOutlined style={{ fontSize: 18, color: hidePresence ? token.colorPrimary : token.colorTextPlaceholder }} />
             <div>
-              <Text strong style={{ display: 'block' }}>Ẩn trạng thái hoạt động</Text>
+              <Text strong style={{ display: 'block' }}>Hide active status</Text>
               <Text type="secondary" style={{ fontSize: 13 }}>
-                Khi bật, bạn bè sẽ không thấy bạn online
+                When turned on, friends won't see you online
               </Text>
             </div>
           </Space>
@@ -298,15 +298,15 @@ const ProfilePage: React.FC = () => {
 
       {/* Đăng xuất */}
       <Popconfirm
-        title="Đăng xuất?"
-        description="Bạn sẽ cần đăng nhập lại để tiếp tục."
-        okText="Đăng xuất"
-        cancelText="Không"
+        title="Log Out?"
+        description="You will need to log in again to continue."
+        okText="Log Out"
+        cancelText="Cancel"
         okButtonProps={{ danger: true }}
         onConfirm={handleLogout}
       >
         <Button danger block size="large" icon={<LogoutOutlined />}>
-          Đăng xuất
+          Log Out
         </Button>
       </Popconfirm>
     </div>

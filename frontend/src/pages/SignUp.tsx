@@ -25,10 +25,10 @@ const SignUpPage: React.FC = () => {
     try {
       await authService.sendVerificationLink(values.email);
       setIsSuccess(true);
-      toast.success('Link xác nhận đã được gửi!');
+      toast.success('Verification link has been sent!');
     } catch (error: unknown) {
       const msg = getApiErrorMessage(error, '');
-      toast.error(`Đăng ký thất bại. Vui lòng thử lại!${msg ? `\n${msg}` : ''}`);
+      toast.error(`Registration failed. Please try again!${msg ? `\n${msg}` : ''}`);
     } finally {
       setIsLoading(false);
     }
@@ -45,12 +45,12 @@ const SignUpPage: React.FC = () => {
         {isSuccess ? (
           <div style={{ textAlign: 'center', padding: '20px 0' }}>
             <CheckCircleFilled style={{ fontSize: 48, color: token.colorSuccess, marginBottom: 16 }} />
-            <Title level={4}>Kiểm tra Email của bạn</Title>
+            <Title level={4}>Check Your Email</Title>
             <Text type="secondary" style={{ display: 'block', marginBottom: 24 }}>
-              Chúng tôi đã gửi một link xác nhận đến email bạn vừa nhập. Vui lòng click vào link đó để hoàn tất việc tạo tài khoản.
+              We have sent a verification link to your email address. Please click the link to finish creating your account.
             </Text>
             <Button block size="large" onClick={() => setIsSuccess(false)}>
-              Gửi lại bằng email khác
+              Resend with another email
             </Button>
           </div>
         ) : (
@@ -59,16 +59,16 @@ const SignUpPage: React.FC = () => {
               <Form.Item
                 name="email"
                 rules={[
-                  { required: true, message: 'Vui lòng nhập Email' },
-                  { type: 'email',  message: 'Email không hợp lệ' },
+                  { required: true, message: 'Email is required' },
+                  { type: 'email',  message: 'Invalid email address' },
                 ]}
               >
-                <Input prefix={<MailOutlined />} placeholder="Nhập địa chỉ Email" size="large" />
+                <Input prefix={<MailOutlined />} placeholder="Enter your email address" size="large" />
               </Form.Item>
 
               <Form.Item>
                 <Button type="primary" htmlType="submit" size="large" block loading={isLoading}>
-                  Gửi link xác nhận
+                  Send verification link
                 </Button>
               </Form.Item>
             </Form>

@@ -98,15 +98,15 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
   const notifContent = (
     <div style={{ width: 320 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0 12px' }}>
-        <Typography.Text strong>Thông báo</Typography.Text>
+        <Typography.Text strong>Notifications</Typography.Text>
         <Space size={4}>
-          <Button type="text" size="small" onClick={markAllRead}>Đọc tất cả</Button>
+          <Button type="text" size="small" onClick={markAllRead}>Mark all read</Button>
           <Button type="text" size="small" icon={<DeleteOutlined />} onClick={clearAll} />
         </Space>
       </div>
       {notifications.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '24px 0', color: token.colorTextPlaceholder }}>
-          Không có thông báo nào
+          No notifications
         </div>
       ) : (
         <List

@@ -46,10 +46,10 @@ const CreatePasswordPage: React.FC = () => {
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: themeToken.colorBgLayout }}>
         <Card style={{ textAlign: 'center', padding: '20px' }}>
           <CloseCircleFilled style={{ fontSize: 48, color: themeToken.colorError, marginBottom: 16 }} />
-          <Title level={4}>Đường dẫn không hợp lệ</Title>
-          <Text type="secondary">Vui lòng đăng ký lại để nhận đường dẫn mới.</Text>
+          <Title level={4}>Invalid Link</Title>
+          <Text type="secondary">Please register again to receive a new link.</Text>
           <div style={{ marginTop: 24 }}>
-            <Button type="primary" onClick={() => navigate('/signup')}>Quay lại trang Đăng ký</Button>
+            <Button type="primary" onClick={() => navigate('/signup')}>Back to Sign Up</Button>
           </div>
         </Card>
       </div>
@@ -65,11 +65,11 @@ const CreatePasswordPage: React.FC = () => {
         password: values.password,
         username: values.username,
       });
-      toast.success(`Đăng ký thành công!\nChào mừng ${data.user.username}`);
+      toast.success(`Registration successful!\nWelcome ${data.user.username}`);
       navigate('/');
     } catch (error: unknown) {
       const msg = getApiErrorMessage(error, '');
-      toast.error(`Xác nhận thất bại. ${msg ? `\n${msg}` : ''}`);
+      toast.error(`Verification failed. ${msg ? `\n${msg}` : ''}`);
     } finally {
       setIsLoading(false);
     }
@@ -79,33 +79,33 @@ const CreatePasswordPage: React.FC = () => {
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px 16px', background: themeToken.colorBgLayout }}>
       <Card style={{ width: '100%', maxWidth: 440, borderRadius: 16, boxShadow: '0 8px 32px rgba(0,0,0,0.08)' }}>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <Title level={2} style={{ marginBottom: 4 }}>Tạo tài khoản</Title>
-          <Text type="secondary">Xác thực thành công cho <b>{emailUrl}</b></Text>
+          <Title level={2} style={{ marginBottom: 4 }}>Create Account</Title>
+          <Text type="secondary">Verification successful for <b>{emailUrl}</b></Text>
         </div>
 
         <Form form={form} layout="vertical" onFinish={handleSubmit} requiredMark={false}>
           <Form.Item
             name="username"
-            rules={[{ required: true, message: 'Vui lòng nhập tên hiển thị' }]}
+            rules={[{ required: true, message: 'Display name is required' }]}
           >
-            <Input prefix={<UserOutlined />} placeholder="Tên hiển thị (Username)" size="large" />
+            <Input prefix={<UserOutlined />} placeholder="Display name (Username)" size="large" />
           </Form.Item>
 
           <Form.Item
             name="password"
             rules={[
-              { required: true, message: 'Vui lòng nhập mật khẩu' },
+              { required: true, message: 'Password is required' },
               {
                 validator: (_, value) =>
                   !value || passwordRequirements.every((r) => r.regex.test(value))
                     ? Promise.resolve()
-                    : Promise.reject('Mật khẩu chưa đủ mạnh'),
+                    : Promise.reject('Password is not strong enough'),
               },
             ]}
           >
             <Input.Password
               prefix={<LockOutlined />}
-              placeholder="Mật khẩu"
+              placeholder="Password"
               size="large"
               autoComplete="new-password"
               onChange={(e) => setPassword(e.target.value)}
@@ -140,18 +140,18 @@ const CreatePasswordPage: React.FC = () => {
             name="confirmPassword"
             dependencies={['password']}
             rules={[
-              { required: true, message: 'Vui lòng xác nhận mật khẩu' },
+              { required: true, message: 'Please confirm your password' },
               ({ getFieldValue }) => ({
                 validator(_, value) {
                   if (!value || getFieldValue('password') === value) return Promise.resolve();
-                  return Promise.reject('Mật khẩu không khớp');
+                  return Promise.reject('Passwords do not match');
                 },
               }),
             ]}
           >
             <Input.Password
               prefix={<LockOutlined />}
-              placeholder="Xác nhận mật khẩu"
+              placeholder="Confirm password"
               size="large"
               autoComplete="new-password"
             />
@@ -159,7 +159,7 @@ const CreatePasswordPage: React.FC = () => {
 
           <Form.Item>
             <Button type="primary" htmlType="submit" size="large" block loading={isLoading}>
-              Hoàn tất & Đăng nhập
+              Complete & Sign In
             </Button>
           </Form.Item>
         </Form>

@@ -49,6 +49,9 @@ interface IMessage {
   text: string;
   timestamp: string;
   rawDate: string;
+  replyId?: string;
+  replySnippet?: string;
+  replySenderId?: string;
   reactions: Array<{ userId: string; emoji: string }>;
 }
 
@@ -87,6 +90,9 @@ const mapMessage = (msg: MessageDTO, currentUserId: string): IMessage => ({
   text: msg.content,
   timestamp: formatTime(msg.createdAt),
   rawDate: msg.createdAt ?? new Date().toISOString(),
+  replyId: msg.replyId,
+  replySnippet: msg.replySnippet,
+  replySenderId: msg.replySenderId,
   reactions: msg.reactions ?? [],
 });
 
@@ -278,6 +284,9 @@ const MessagesPage: React.FC = () => {
         text: payload.content,
         timestamp: formatTime(payload.createdAt),
         rawDate: payload.createdAt ?? new Date().toISOString(),
+        replyId: payload.replyId,
+        replySnippet: payload.replySnippet,
+        replySenderId: payload.replySenderId,
         reactions: [],
       },
     ]);
@@ -662,6 +671,49 @@ const MessagesPage: React.FC = () => {
                           wordBreak: 'break-word',
                         }}
                       >
+                        {/* Quoted Message Snippet */}
+                        {msg.replySnippet && (
+                          <div
+                            style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              padding: '5px 10px',
+                              marginBottom: 8,
+                              borderRadius: 6,
+                              background: isMe 
+                                ? 'rgba(0, 0, 0, 0.18)' 
+                                : (isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)'),
+                              borderLeft: `3px solid ${isMe ? 'rgba(255, 255, 255, 0.9)' : token.colorPrimary}`,
+                              cursor: 'pointer',
+                              userSelect: 'none',
+                            }}
+                          >
+                            <span
+                              style={{
+                                fontSize: 11,
+                                fontWeight: 600,
+                                color: isMe ? '#ffffff' : token.colorPrimary,
+                                marginBottom: 2,
+                              }}
+                            >
+                              {msg.replySenderId === currentUserId
+                                ? 'You'
+                                : (selectedConversation?.participants.find(p => p.userId === msg.replySenderId)?.username || 'User')}
+                            </span>
+                            <span
+                              style={{
+                                fontSize: 12,
+                                color: isMe ? 'rgba(255, 255, 255, 0.85)' : token.colorTextSecondary,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                maxWidth: 360,
+                              }}
+                            >
+                              {msg.replySnippet}
+                            </span>
+                          </div>
+                        )}
                         <Text style={{ display: 'block', color: isMe ? '#fff' : undefined, lineHeight: 1.5 }}>
                           {msg.text}
                         </Text>

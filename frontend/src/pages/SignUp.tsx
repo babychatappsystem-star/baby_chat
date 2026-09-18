@@ -63,7 +63,7 @@ const SignUpPage: React.FC = () => {
                   { type: 'email',  message: 'Invalid email address' },
                 ]}
               >
-                <Input prefix={<MailOutlined />} placeholder="Enter your email address" size="large" />
+                <Input prefix={<MailOutlined style={{ color: token.colorTextPlaceholder, marginRight: 8 }} />} placeholder="Enter your email address" size="large" />
               </Form.Item>
 
               <Form.Item>

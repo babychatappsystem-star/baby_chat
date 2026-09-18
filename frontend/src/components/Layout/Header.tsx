@@ -68,7 +68,7 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
   const currentUser = {
     name:   profile?.username ?? localStorage.getItem('username') ?? 'John Doe',
     email:  profile?.email    ?? localStorage.getItem('email')    ?? 'user@example.com',
-    avatar: profile?.avatarUrl ? `${apiUrl}${profile.avatarUrl}` : null,
+    avatar: profile?.avatarUrl ? (profile.avatarUrl.startsWith('http') ? profile.avatarUrl : `${apiUrl}${profile.avatarUrl}`) : null,
   };
 
   const userMenuItems: MenuProps['items'] = [

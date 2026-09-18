@@ -38,8 +38,10 @@ const { Title, Text } = Typography;
 
 const { apiUrl } = environmentLoader.loadConfig();
 
-const resolveAvatarUrl = (profile: ProfileDTO | null): string | undefined =>
-  profile?.avatarUrl ? `${apiUrl}${profile.avatarUrl}` : undefined;
+const resolveAvatarUrl = (profile: ProfileDTO | null): string | undefined => {
+  if (!profile?.avatarUrl) return undefined;
+  return profile.avatarUrl.startsWith('http') ? profile.avatarUrl : `${apiUrl}${profile.avatarUrl}`;
+};
 const formatCode = (code: string): string =>
   code.length === 8 ? `${code.slice(0, 4)}-${code.slice(4)}` : code;
 

@@ -109,6 +109,7 @@ export interface VerifyRegistrationPayload {
 export interface SendMessagePayload {
   conversationId: string;
   content: string;
+  replyId?: string;
 }
 
 // ── Friends ──

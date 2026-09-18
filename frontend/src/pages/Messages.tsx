@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Phone, Video, MoreVertical, Smile, Paperclip, MessageCircle } from 'lucide-react';
+import { Phone, Video, MoreVertical, Smile, Paperclip, MessageCircle, Reply, X } from 'lucide-react';
 import { Input, Button, Badge, Avatar, Tooltip, Typography, Space, Spin, Popover } from 'antd';
 import EmojiPicker, { Theme, type EmojiClickData } from 'emoji-picker-react';
 import { SearchOutlined, SendOutlined, TeamOutlined, UserOutlined } from '@ant-design/icons';
@@ -134,6 +134,11 @@ const MessagesPage: React.FC = () => {
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [replyingTo, setReplyingTo] = useState<{
+    id: string;
+    text: string;
+    senderName: string;
+  } | null>(null);
 
   // Expressive Chat states
   const [thresholds, setThresholds] = useState<number>(5);
@@ -214,6 +219,7 @@ const MessagesPage: React.FC = () => {
 
   useEffect(() => {
     shouldScrollBottomRef.current = true;
+    setReplyingTo(null);
   }, [selectedConversation?.id]);
 
   useEffect(() => {
@@ -339,13 +345,21 @@ const MessagesPage: React.FC = () => {
     const content = contentOverride ?? newMessage;
     if (!content.trim() || isSending || !selectedConversation) return;
     
-    // Nếu không có override, reset newMessage (từ ô input)
-    if (!contentOverride) setNewMessage('');
+    const replyIdToSend = replyingTo?.id;
+    // Nếu không có override, reset newMessage (từ ô input) và clear replyingTo
+    if (!contentOverride) {
+      setNewMessage('');
+      setReplyingTo(null);
+    }
     setIsSending(true);
     try {
       // Chỉ gửi qua REST — KHÔNG append vào messages ở đây.
       // Tin sẽ tự về qua message.new (kể cả tin của chính mình) và được render ở handler WS.
-      await conversationService.sendMessage({ conversationId: selectedConversation.id, content });
+      await conversationService.sendMessage({
+        conversationId: selectedConversation.id,
+        content,
+        replyId: replyIdToSend,
+      });
     } catch {
       console.error('Failed to send message');
     } finally {
@@ -655,15 +669,35 @@ const MessagesPage: React.FC = () => {
                     </Tooltip>
                   </div>
                   
-                  {/* Hover action to show emoji picker */}
+                  {/* Hover action to show reply button and emoji picker */}
                   <div
                     className="message-actions"
                     style={{
                       opacity: 0,
                       transition: 'opacity 0.2s',
                       alignSelf: 'center',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 2,
                     }}
                   >
+                    <Tooltip title="Reply">
+                      <Button
+                        type="text"
+                        shape="circle"
+                        icon={<Reply size={16} />}
+                        style={{ color: token.colorTextSecondary }}
+                        onClick={() => {
+                          const senderName = isMe ? 'You' : (senderParticipant?.username || 'User');
+                          setReplyingTo({
+                            id: msg.id,
+                            text: msg.text,
+                            senderName,
+                          });
+                          inputRef.current?.focus();
+                        }}
+                      />
+                    </Tooltip>
                     <Popover
                       content={
                         <EmojiPicker
@@ -745,6 +779,39 @@ const MessagesPage: React.FC = () => {
           background: token.colorBgContainer,
           borderTop: `1px solid ${token.colorBorderSecondary}`,
         }}>
+          {replyingTo && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '6px 12px',
+              marginBottom: 8,
+              borderRadius: 8,
+              background: token.colorFillAlter,
+              borderLeft: `3px solid ${token.colorPrimary}`,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
+                <Reply size={14} style={{ color: token.colorPrimary, flexShrink: 0 }} />
+                <div style={{ overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                  <Text strong style={{ fontSize: 12, color: token.colorPrimary, marginRight: 6 }}>
+                    {replyingTo.senderName}
+                  </Text>
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    {replyingTo.text.length > 80 ? replyingTo.text.slice(0, 80) + '...' : replyingTo.text}
+                  </Text>
+                </div>
+              </div>
+              <Button
+                type="text"
+                size="small"
+                shape="circle"
+                icon={<X size={14} />}
+                style={{ color: token.colorTextSecondary }}
+                onClick={() => setReplyingTo(null)}
+                aria-label="Cancel reply"
+              />
+            </div>
+          )}
           <form onSubmit={handleFormSubmit}>
             <div style={{
               display: 'flex',
@@ -793,6 +860,11 @@ const MessagesPage: React.FC = () => {
                 ref={inputRef}
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape' && replyingTo) {
+                    setReplyingTo(null);
+                  }
+                }}
                 placeholder="Type a message..."
                 aria-label="Message input"
                 style={{

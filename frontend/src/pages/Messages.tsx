@@ -321,7 +321,7 @@ const MessagesPage: React.FC = () => {
   };
 
   const startPress = () => {
-    if (!newMessage.trim() || isSending || !selectedConversation) return;
+    if (isSending || !selectedConversation) return;
     setPressing(true);
     setEmotionLevel(0);
     emotionLevelRef.current = 0;
@@ -339,12 +339,12 @@ const MessagesPage: React.FC = () => {
       pressTimerRef.current = null;
     }
     
-    // Quick click vs Long press
+    if (!pressing) return; // Prevent duplicate triggers
+    
     let finalMessage = newMessage.trim();
-    if (pressing && emotionLevelRef.current > 0) {
-      finalMessage += ' ' + EXPRESSIVE_EMOJIS[Math.min(emotionLevelRef.current, EXPRESSIVE_EMOJIS.length - 1)];
-      setNewMessage('');
-    }
+    // Always append an emoji (even on quick click: level 0)
+    finalMessage += (finalMessage ? ' ' : '') + EXPRESSIVE_EMOJIS[Math.min(emotionLevelRef.current, EXPRESSIVE_EMOJIS.length - 1)];
+    setNewMessage('');
     
     setPressing(false);
     setEmotionLevel(0);
@@ -722,9 +722,36 @@ const MessagesPage: React.FC = () => {
               <Tooltip title="Feature coming soon">
                 <Button type="text" size="small" icon={<Paperclip size={18} />} aria-label="Attach file" disabled />
               </Tooltip>
-              <Tooltip title="Feature coming soon">
-                <Button type="text" size="small" icon={<Smile size={18} />} aria-label="Emoji" disabled />
-              </Tooltip>
+              <div style={{ position: 'relative' }}>
+                {pressing && (
+                  <div style={{
+                    position: 'absolute',
+                    top: -60,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    fontSize: 32 + (emotionLevel * 6), // Emotion gets bigger
+                    transition: 'all 0.2s',
+                    pointerEvents: 'none',
+                    filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.1))',
+                    zIndex: 10,
+                  }}>
+                    {EXPRESSIVE_EMOJIS[Math.min(emotionLevel, EXPRESSIVE_EMOJIS.length - 1)]}
+                  </div>
+                )}
+                <Tooltip title="Hold for Expressive Chat">
+                  <Button 
+                    type="text" 
+                    size="small" 
+                    icon={<Smile size={18} />} 
+                    aria-label="Expressive Chat" 
+                    onMouseDown={startPress}
+                    onMouseUp={() => endPress()}
+                    onMouseLeave={() => { if (pressing) endPress(); }}
+                    onTouchStart={startPress}
+                    onTouchEnd={() => endPress()}
+                  />
+                </Tooltip>
+              </div>
               <input
                 ref={inputRef}
                 value={newMessage}
@@ -741,37 +768,16 @@ const MessagesPage: React.FC = () => {
                   padding: '4px 0',
                 }}
               />
-              <div style={{ position: 'relative' }}>
-                {pressing && emotionLevel > 0 && (
-                  <div style={{
-                    position: 'absolute',
-                    top: -60,
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    fontSize: 32 + (emotionLevel * 6), // Emotion gets bigger
-                    transition: 'all 0.2s',
-                    pointerEvents: 'none',
-                    filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.1))',
-                    zIndex: 10,
-                  }}>
-                    {EXPRESSIVE_EMOJIS[Math.min(emotionLevel, EXPRESSIVE_EMOJIS.length - 1)]}
-                  </div>
-                )}
-                <Button
-                  type="primary"
-                  shape="circle"
-                  icon={<SendOutlined />}
-                  loading={isSending}
-                  disabled={!newMessage.trim()}
-                  aria-label="Send message"
-                  style={{ flexShrink: 0 }}
-                  onMouseDown={startPress}
-                  onMouseUp={() => endPress()}
-                  onMouseLeave={() => { if (pressing) endPress(); }}
-                  onTouchStart={startPress}
-                  onTouchEnd={() => endPress()}
-                />
-              </div>
+              <Button
+                type="primary"
+                shape="circle"
+                icon={<SendOutlined />}
+                loading={isSending}
+                disabled={!newMessage.trim()}
+                aria-label="Send message"
+                style={{ flexShrink: 0 }}
+                htmlType="submit"
+              />
             </div>
           </form>
         </div>

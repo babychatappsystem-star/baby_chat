@@ -18,6 +18,9 @@ export class UserMapper {
       avatarFileId: doc.avatarFileId,
       lastSeenAt: doc.lastSeenAt,
       hidePresence: doc.hidePresence,
+      expressiveChatThresholds: doc.expressiveChatThresholds,
+      expressiveChatTransitionTime: doc.expressiveChatTransitionTime,
+      expressiveChatEmojis: doc.expressiveChatEmojis,
     });
   }
 
@@ -31,6 +34,9 @@ export class UserMapper {
       dateOfBirth: entity.dateOfBirth,
       friendCode: entity.friendCode,
       avatarFileId: entity.avatarFileId,
+      expressiveChatThresholds: entity.expressiveChatThresholds,
+      expressiveChatTransitionTime: entity.expressiveChatTransitionTime,
+      expressiveChatEmojis: entity.expressiveChatEmojis,
     };
   }
 }

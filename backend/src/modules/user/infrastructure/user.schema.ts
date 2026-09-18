@@ -44,6 +44,16 @@ export class UserDocument extends Document {
   // Ẩn trạng thái hoạt động. Khi true, luôn hiện offline với người khác.
   @Prop({ default: false })
   declare hidePresence: boolean;
+
+  // Cấu hình Expressive Chat
+  @Prop({ required: false, default: 5 })
+  declare expressiveChatThresholds: number;
+
+  @Prop({ required: false, default: 300 })
+  declare expressiveChatTransitionTime: number;
+
+  @Prop({ type: [String], default: ['🙂', '😀', '😄', '😆', '😂'] })
+  declare expressiveChatEmojis: string[];
 }
 
 export const UserSchema = SchemaFactory.createForClass(UserDocument);

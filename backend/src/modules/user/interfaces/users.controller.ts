@@ -171,7 +171,7 @@ export class UsersController {
     @CurrentUser('userId') userId: string,
     @Body() dto: UpdateExpressiveChatSettingsDto,
   ): Promise<UpdateExpressiveChatSettingsDto> {
-    await this.updateExpressiveChatSettingsUseCase.execute(userId, dto.thresholds, dto.transitionTime);
+    await this.updateExpressiveChatSettingsUseCase.execute(userId, dto.thresholds, dto.transitionTime, dto.emojis);
     return dto;
   }
 

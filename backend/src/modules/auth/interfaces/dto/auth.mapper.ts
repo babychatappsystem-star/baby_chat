@@ -32,6 +32,7 @@ export class AuthMapper {
       hidePresence: result.user.hidePresence,
       expressiveChatThresholds: result.user.expressiveChatThresholds,
       expressiveChatTransitionTime: result.user.expressiveChatTransitionTime,
+      expressiveChatEmojis: result.user.expressiveChatEmojis,
       roles,
     };
   }

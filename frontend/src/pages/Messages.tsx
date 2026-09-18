@@ -154,7 +154,8 @@ const MessagesPage: React.FC = () => {
 
   const pressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const emotionLevelRef = useRef<number>(0);
-  const EXPRESSIVE_EMOJIS = ['🙂', '😀', '😄', '😆', '😂'];
+  const DEFAULT_EXPRESSIVE_EMOJIS = ['🙂', '😀', '😄', '😆', '😂'];
+  const [expressiveEmojis, setExpressiveEmojis] = useState<string[]>(DEFAULT_EXPRESSIVE_EMOJIS);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -190,6 +191,9 @@ const MessagesPage: React.FC = () => {
         localStorage.setItem('userId', p.userId);
         setThresholds(p.expressiveChatThresholds ?? 5);
         setTransitionTime(p.expressiveChatTransitionTime ?? 300);
+        if (p.expressiveChatEmojis && p.expressiveChatEmojis.length > 0) {
+          setExpressiveEmojis(p.expressiveChatEmojis);
+        }
       })
       .catch((err) => console.error('Failed to load profile', err));
   }, []);
@@ -417,8 +421,9 @@ const MessagesPage: React.FC = () => {
     if (!pressing) return; // Prevent duplicate triggers
     
     let finalMessage = newMessage.trim();
+    const activeEmojis = expressiveEmojis.length > 0 ? expressiveEmojis : DEFAULT_EXPRESSIVE_EMOJIS;
     // Always append an emoji (even on quick click: level 0)
-    finalMessage += (finalMessage ? ' ' : '') + EXPRESSIVE_EMOJIS[Math.min(emotionLevelRef.current, EXPRESSIVE_EMOJIS.length - 1)];
+    finalMessage += (finalMessage ? ' ' : '') + activeEmojis[Math.min(emotionLevelRef.current, activeEmojis.length - 1)];
     setNewMessage('');
     
     setPressing(false);
@@ -932,7 +937,7 @@ const MessagesPage: React.FC = () => {
                     filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.1))',
                     zIndex: 10,
                   }}>
-                    {EXPRESSIVE_EMOJIS[Math.min(emotionLevel, EXPRESSIVE_EMOJIS.length - 1)]}
+                    {(expressiveEmojis.length > 0 ? expressiveEmojis : DEFAULT_EXPRESSIVE_EMOJIS)[Math.min(emotionLevel, (expressiveEmojis.length > 0 ? expressiveEmojis : DEFAULT_EXPRESSIVE_EMOJIS).length - 1)]}
                   </div>
                 )}
                 <Tooltip title="Hold for Expressive Chat" placement="bottom">

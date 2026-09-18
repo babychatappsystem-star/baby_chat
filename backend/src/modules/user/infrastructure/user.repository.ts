@@ -110,10 +110,17 @@ export class UserRepository implements IUserRepository {
   }
 
   // Cập nhật cấu hình Expressive Chat
-  async updateExpressiveChatSettings(userId: string, thresholds: number, transitionTime: number): Promise<void> {
+  async updateExpressiveChatSettings(userId: string, thresholds: number, transitionTime: number, emojis?: string[]): Promise<void> {
+    const updateDoc: any = {
+      expressiveChatThresholds: thresholds,
+      expressiveChatTransitionTime: transitionTime,
+    };
+    if (emojis) {
+      updateDoc.expressiveChatEmojis = emojis;
+    }
     await this.userModel.updateOne(
       { _id: userId },
-      { $set: { expressiveChatThresholds: thresholds, expressiveChatTransitionTime: transitionTime } }
+      { $set: updateDoc }
     );
   }
 }

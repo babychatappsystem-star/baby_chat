@@ -25,6 +25,7 @@ export interface ProfileDTO {
   hidePresence?: boolean;
   expressiveChatThresholds?: number;
   expressiveChatTransitionTime?: number;
+  expressiveChatEmojis?: string[];
 }
 
 // ── Files ──

@@ -64,6 +64,9 @@ export class ProfileResponseDto {
 
   @ApiPropertyOptional({ example: 300 })
   expressiveChatTransitionTime?: number;
+
+  @ApiPropertyOptional({ example: ['🙂', '😀', '😄', '😆', '😂'], type: [String] })
+  expressiveChatEmojis?: string[];
 }
 
 // Response cho /auth/logout.

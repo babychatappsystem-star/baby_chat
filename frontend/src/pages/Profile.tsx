@@ -15,6 +15,8 @@ import {
   InputNumber,
   Row,
   Col,
+  Tooltip,
+  Popover,
 } from 'antd';
 import { useAntdApp } from '../hooks/useAntdApp';
 import {
@@ -30,7 +32,12 @@ import {
   EyeOutlined,
   EyeInvisibleOutlined,
   SettingOutlined,
+  PlusOutlined,
+  CloseOutlined,
+  SmileOutlined,
 } from '@ant-design/icons';
+import EmojiPicker, { Theme, type EmojiClickData } from 'emoji-picker-react';
+import { useDarkMode } from '../hooks/useDarkMode';
 import { updatePresenceSettings } from '../services/presenceService';
 import { updateExpressiveChatSettings } from '../services/userService';
 import { isSoundMuted, toggleSound } from '../lib/sound';
@@ -45,6 +52,15 @@ const { Title, Text } = Typography;
 
 const { apiUrl } = environmentLoader.loadConfig();
 
+const PRESET_PACKS = [
+  { name: 'Joy', icon: '😄', emojis: ['🙂', '😀', '😄', '😆', '😂'] },
+  { name: 'Love', icon: '💖', emojis: ['😊', '🥰', '😍', '💖', '❤️‍🔥'] },
+  { name: 'Angry', icon: '🤬', emojis: ['😐', '😒', '😤', '😡', '🤬'] },
+  { name: 'Shock', icon: '🤯', emojis: ['😮', '😲', '😳', '😱', '🤯'] },
+  { name: 'Cool', icon: '😎', emojis: ['😏', '😌', '😎', '🔥', '👑'] },
+  { name: 'Cry', icon: '😭', emojis: ['🥺', '😢', '😥', '😭', '💔'] },
+];
+
 const resolveAvatarUrl = (profile: ProfileDTO | null): string | undefined => {
   if (!profile?.avatarUrl) return undefined;
   return profile.avatarUrl.startsWith('http') ? profile.avatarUrl : `${apiUrl}${profile.avatarUrl}`;
@@ -54,6 +70,7 @@ const formatCode = (code: string): string =>
 
 const ProfilePage: React.FC = () => {
   const token = useThemeToken();
+  const isDark = useDarkMode();
   const navigate = useNavigate();
   const { message } = useAntdApp();
 
@@ -72,6 +89,11 @@ const ProfilePage: React.FC = () => {
 
   const [thresholds, setThresholds] = useState<number>(5);
   const [transitionTime, setTransitionTime] = useState<number>(300);
+  const [emojis, setEmojis] = useState<string[]>(['🙂', '😀', '😄', '😆', '😂']);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [testEmotionLevel, setTestEmotionLevel] = useState(0);
+  const [isTesting, setIsTesting] = useState(false);
+  const testTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [updatingExpressiveSettings, setUpdatingExpressiveSettings] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -84,6 +106,9 @@ const ProfilePage: React.FC = () => {
         setHidePresence(p.hidePresence ?? false);
         setThresholds(p.expressiveChatThresholds ?? 5);
         setTransitionTime(p.expressiveChatTransitionTime ?? 300);
+        if (p.expressiveChatEmojis && p.expressiveChatEmojis.length > 0) {
+          setEmojis(p.expressiveChatEmojis);
+        }
       })
       .catch((err) => message.error(getFriendErrorMessage(err, 'Failed to load profile')))
       .finally(() => setLoadingProfile(false));
@@ -108,9 +133,9 @@ const ProfilePage: React.FC = () => {
     setRegenerating(true);
     try {
       setFriendCode(await friendService.regenerateFriendCode());
-      message.success('New code generated');
+      message.success('Friend code regenerated');
     } catch (err) {
-      message.error(getFriendErrorMessage(err, 'Failed to generate new code'));
+      message.error(getFriendErrorMessage(err, 'Failed to regenerate code'));
     } finally {
       setRegenerating(false);
     }
@@ -159,10 +184,56 @@ const ProfilePage: React.FC = () => {
     }
   };
 
+  const handleAddEmoji = (emojiData: EmojiClickData) => {
+    if (emojis.length >= 10) {
+      message.warning('Maximum 10 emojis allowed');
+      return;
+    }
+    const updated = [...emojis, emojiData.emoji];
+    setEmojis(updated);
+    setPickerOpen(false);
+  };
+
+  const handleRemoveEmoji = (index: number) => {
+    if (emojis.length <= 2) {
+      message.warning('Minimum 2 emojis required');
+      return;
+    }
+    const updated = emojis.filter((_, i) => i !== index);
+    setEmojis(updated);
+    if (thresholds > updated.length) {
+      setThresholds(updated.length);
+    }
+  };
+
+  const handleApplyPreset = (presetEmojis: string[]) => {
+    setEmojis(presetEmojis);
+    if (thresholds > presetEmojis.length) {
+      setThresholds(presetEmojis.length);
+    }
+    message.success('Applied preset pack');
+  };
+
+  const startTestPress = () => {
+    setIsTesting(true);
+    setTestEmotionLevel(0);
+    testTimerRef.current = setInterval(() => {
+      setTestEmotionLevel((prev) => Math.min(prev + 1, thresholds - 1));
+    }, transitionTime);
+  };
+
+  const endTestPress = () => {
+    if (testTimerRef.current) {
+      clearInterval(testTimerRef.current);
+      testTimerRef.current = null;
+    }
+    setIsTesting(false);
+  };
+
   const handleUpdateExpressiveSettings = async () => {
     setUpdatingExpressiveSettings(true);
     try {
-      await updateExpressiveChatSettings(thresholds, transitionTime);
+      await updateExpressiveChatSettings(thresholds, transitionTime, emojis);
       message.success('Expressive chat settings saved');
     } catch {
       message.error('Failed to save settings');
@@ -357,25 +428,32 @@ const ProfilePage: React.FC = () => {
         </Flex>
 
         <div style={{ paddingLeft: 30 }}>
-          <Text strong>Number of emotion thresholds</Text>
+          {/* Emotion Thresholds Slider */}
+          <Flex justify="space-between" align="center">
+            <Text strong>Number of emotion thresholds</Text>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              Max: {Math.min(10, Math.max(2, emojis.length))} (based on pack size)
+            </Text>
+          </Flex>
           <Flex align="center" gap={16} style={{ marginTop: 8, marginBottom: 16 }}>
             <Slider
               min={2}
-              max={5}
+              max={Math.min(10, Math.max(2, emojis.length))}
               onChange={setThresholds}
-              value={thresholds}
+              value={Math.min(thresholds, Math.max(2, emojis.length))}
               style={{ flex: 1 }}
             />
             <InputNumber
               min={2}
-              max={5}
-              value={thresholds}
-              onChange={(val) => setThresholds(val || 5)}
+              max={Math.min(10, Math.max(2, emojis.length))}
+              value={Math.min(thresholds, Math.max(2, emojis.length))}
+              onChange={(val) => setThresholds(val || 2)}
             />
           </Flex>
 
+          {/* Transition Time Slider */}
           <Text strong>Transition time between thresholds (ms)</Text>
-          <Flex align="center" gap={16} style={{ marginTop: 8 }}>
+          <Flex align="center" gap={16} style={{ marginTop: 8, marginBottom: 24 }}>
             <Slider
               min={100}
               max={2000}
@@ -392,8 +470,186 @@ const ProfilePage: React.FC = () => {
               onChange={(val) => setTransitionTime(val || 300)}
             />
           </Flex>
-        </div>
 
+          {/* Custom Emotion Pack Section */}
+          <div style={{ borderTop: `1px solid ${token.colorBorderSecondary}`, paddingTop: 20 }}>
+            <Flex justify="space-between" align="center" style={{ marginBottom: 10 }}>
+              <div>
+                <Text strong style={{ display: 'block', fontSize: 14 }}>
+                  Custom Emotion Pack ({emojis.length}/10 icons)
+                </Text>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Emojis progress from level 1 to level {Math.min(thresholds, emojis.length)} when holding the Smile button
+                </Text>
+              </div>
+              <Popover
+                open={pickerOpen}
+                onOpenChange={setPickerOpen}
+                trigger="click"
+                placement="bottomRight"
+                content={
+                  <EmojiPicker
+                    theme={isDark ? Theme.DARK : Theme.LIGHT}
+                    onEmojiClick={handleAddEmoji}
+                    width={320}
+                    height={400}
+                    style={{ border: 'none' }}
+                  />
+                }
+                overlayInnerStyle={{ padding: 0, overflow: 'hidden', borderRadius: 8 }}
+              >
+                <Button
+                  type="dashed"
+                  size="small"
+                  icon={<PlusOutlined />}
+                  disabled={emojis.length >= 10}
+                >
+                  Add Icon
+                </Button>
+              </Popover>
+            </Flex>
+
+            {/* Emoji Chips Sequence */}
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 8,
+                padding: '12px',
+                background: token.colorFillQuaternary,
+                borderRadius: 10,
+                border: `1px solid ${token.colorBorderSecondary}`,
+                marginBottom: 16,
+              }}
+            >
+              {emojis.map((emoji, idx) => {
+                const isActiveInThreshold = idx < thresholds;
+                return (
+                  <div
+                    key={idx}
+                    style={{
+                      position: 'relative',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: 52,
+                      height: 62,
+                      borderRadius: 8,
+                      background: isActiveInThreshold ? token.colorBgContainer : 'transparent',
+                      border: `1px solid ${isActiveInThreshold ? token.colorPrimary : token.colorBorderSecondary}`,
+                      boxShadow: isActiveInThreshold ? '0 2px 6px rgba(0,0,0,0.06)' : 'none',
+                      opacity: isActiveInThreshold ? 1 : 0.45,
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <span
+                      style={{
+                        position: 'absolute',
+                        top: 2,
+                        left: 4,
+                        fontSize: 10,
+                        fontWeight: 700,
+                        color: isActiveInThreshold ? token.colorPrimary : token.colorTextTertiary,
+                      }}
+                    >
+                      #{idx + 1}
+                    </span>
+                    {emojis.length > 2 && (
+                      <Tooltip title="Remove icon">
+                        <Button
+                          type="text"
+                          size="small"
+                          shape="circle"
+                          icon={<CloseOutlined style={{ fontSize: 9 }} />}
+                          onClick={() => handleRemoveEmoji(idx)}
+                          style={{
+                            position: 'absolute',
+                            top: 2,
+                            right: 2,
+                            width: 16,
+                            height: 16,
+                            minWidth: 16,
+                            padding: 0,
+                            color: token.colorTextTertiary,
+                          }}
+                        />
+                      </Tooltip>
+                    )}
+                    <span style={{ fontSize: 24, marginTop: 12 }}>{emoji}</span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Quick Presets */}
+            <div style={{ marginBottom: 18 }}>
+              <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>
+                Quick Presets:
+              </Text>
+              <Flex wrap="wrap" gap={8}>
+                {PRESET_PACKS.map((preset) => (
+                  <Button
+                    key={preset.name}
+                    size="small"
+                    onClick={() => handleApplyPreset(preset.emojis)}
+                    style={{ borderRadius: 14, fontSize: 12 }}
+                  >
+                    {preset.icon} {preset.name}
+                  </Button>
+                ))}
+              </Flex>
+            </div>
+
+            {/* Live Interactive Test Widget */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '12px 16px',
+                background: token.colorBgContainer,
+                borderRadius: 8,
+                border: `1px dashed ${token.colorBorderSecondary}`,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <Button
+                  type={isTesting ? 'primary' : 'default'}
+                  shape="circle"
+                  size="large"
+                  icon={<SmileOutlined style={{ fontSize: 20 }} />}
+                  onMouseDown={startTestPress}
+                  onMouseUp={endTestPress}
+                  onMouseLeave={endTestPress}
+                  onTouchStart={startTestPress}
+                  onTouchEnd={endTestPress}
+                  style={{
+                    boxShadow: isTesting ? `0 0 12px ${token.colorPrimary}` : undefined,
+                    transition: 'all 0.2s',
+                  }}
+                />
+                <div>
+                  <Text strong style={{ fontSize: 13, display: 'block' }}>
+                    {isTesting ? `Level ${testEmotionLevel + 1}/${thresholds}` : 'Hold button to test'}
+                  </Text>
+                  <Text type="secondary" style={{ fontSize: 11 }}>
+                    {isTesting ? 'Release when done' : 'Simulates Expressive Chat long-press'}
+                  </Text>
+                </div>
+              </div>
+              <div
+                style={{
+                  fontSize: isTesting ? 36 : 24,
+                  transition: 'all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                  transform: isTesting ? 'scale(1.2)' : 'scale(1)',
+                }}
+              >
+                {emojis[Math.min(testEmotionLevel, emojis.length - 1)]}
+              </div>
+            </div>
+          </div>
+        </div>
       </Card>
         </Col>
       </Row>

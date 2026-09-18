@@ -71,3 +71,60 @@ input:-webkit-autofill:active {
 .dark .chat-scroll::-webkit-scrollbar-thumb:hover {
   background-color: rgba(255, 255, 255, 0.35);
 }
+
+/* Dark mode root color scheme */
+html.dark {
+  color-scheme: dark;
+}
+
+/* Custom scrollbar cho khung chọn emoji (Emoji Picker) */
+.EmojiPickerReact .epr-body {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+.EmojiPickerReact .epr-body::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.EmojiPickerReact .epr-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.EmojiPickerReact .epr-body::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background-clip: content-box;
+}
+
+.EmojiPickerReact .epr-body::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.35);
+}
+
+/* Dark mode scrollbar cho Emoji Picker */
+.epr-dark-theme,
+.dark .EmojiPickerReact {
+  color-scheme: dark !important;
+}
+
+.epr-dark-theme .epr-body,
+.dark .EmojiPickerReact .epr-body {
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent !important;
+}
+
+.epr-dark-theme .epr-body::-webkit-scrollbar-track,
+.dark .EmojiPickerReact .epr-body::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.epr-dark-theme .epr-body::-webkit-scrollbar-thumb,
+.dark .EmojiPickerReact .epr-body::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.epr-dark-theme .epr-body::-webkit-scrollbar-thumb:hover,
+.dark .EmojiPickerReact .epr-body::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.35) !important;
+}

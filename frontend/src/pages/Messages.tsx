@@ -132,6 +132,17 @@ const MessagesPage: React.FC = () => {
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Expressive Chat states
+  const [thresholds, setThresholds] = useState<number>(5);
+  const [transitionTime, setTransitionTime] = useState<number>(300);
+  const [pressing, setPressing] = useState(false);
+  const [emotionLevel, setEmotionLevel] = useState(0);
+
+  const pressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const emotionLevelRef = useRef<number>(0);
+  const EXPRESSIVE_EMOJIS = ['🙂', '😀', '😄', '😆', '😂'];
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { presenceMap } = React.useContext(PresenceContext);
@@ -143,6 +154,8 @@ const MessagesPage: React.FC = () => {
       .then((p) => {
         setCurrentUserId(p.userId);
         localStorage.setItem('userId', p.userId);
+        setThresholds(p.expressiveChatThresholds ?? 5);
+        setTransitionTime(p.expressiveChatTransitionTime ?? 300);
       })
       .catch((err) => console.error('Failed to load profile', err));
   }, []);
@@ -287,21 +300,66 @@ const MessagesPage: React.FC = () => {
     }
   };
 
-  const handleSendMessage = async (e?: React.FormEvent<HTMLFormElement>) => {
+  const handleSendMessage = async (e?: React.FormEvent<HTMLFormElement>, contentOverride?: string) => {
     e?.preventDefault();
-    if (!newMessage.trim() || isSending || !selectedConversation) return;
-    const content = newMessage;
-    setNewMessage('');
+    const content = contentOverride ?? newMessage;
+    if (!content.trim() || isSending || !selectedConversation) return;
+    
+    // Nếu không có override, reset newMessage (từ ô input)
+    if (!contentOverride) setNewMessage('');
     setIsSending(true);
     try {
       // Chỉ gửi qua REST — KHÔNG append vào messages ở đây.
       // Tin sẽ tự về qua message.new (kể cả tin của chính mình) và được render ở handler WS.
       await conversationService.sendMessage({ conversationId: selectedConversation.id, content });
     } catch {
-      setNewMessage(content);
+      console.error('Failed to send message');
     } finally {
       setIsSending(false);
       inputRef.current?.focus();
+    }
+  };
+
+  const startPress = () => {
+    if (!newMessage.trim() || isSending || !selectedConversation) return;
+    setPressing(true);
+    setEmotionLevel(0);
+    emotionLevelRef.current = 0;
+    
+    pressTimerRef.current = setInterval(() => {
+      emotionLevelRef.current = Math.min(emotionLevelRef.current + 1, thresholds - 1);
+      setEmotionLevel(emotionLevelRef.current);
+    }, transitionTime);
+  };
+
+  const endPress = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (pressTimerRef.current) {
+      clearInterval(pressTimerRef.current);
+      pressTimerRef.current = null;
+    }
+    
+    // Quick click vs Long press
+    let finalMessage = newMessage.trim();
+    if (pressing && emotionLevelRef.current > 0) {
+      finalMessage += ' ' + EXPRESSIVE_EMOJIS[Math.min(emotionLevelRef.current, EXPRESSIVE_EMOJIS.length - 1)];
+      setNewMessage('');
+    }
+    
+    setPressing(false);
+    setEmotionLevel(0);
+    emotionLevelRef.current = 0;
+
+    if (finalMessage) {
+      handleSendMessage(undefined, finalMessage);
+    }
+  };
+
+  const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    // Nếu đang nhấn giữ thì endPress sẽ gửi. Nếu chỉ nhấn Enter, xử lý bình thường.
+    if (!pressing) {
+      handleSendMessage(e);
     }
   };
 
@@ -650,7 +708,7 @@ const MessagesPage: React.FC = () => {
           background: token.colorBgContainer,
           borderTop: `1px solid ${token.colorBorderSecondary}`,
         }}>
-          <form onSubmit={handleSendMessage}>
+          <form onSubmit={handleFormSubmit}>
             <div style={{
               display: 'flex',
               alignItems: 'center',
@@ -683,16 +741,37 @@ const MessagesPage: React.FC = () => {
                   padding: '4px 0',
                 }}
               />
-              <Button
-                type="primary"
-                htmlType="submit"
-                shape="circle"
-                icon={<SendOutlined />}
-                loading={isSending}
-                disabled={!newMessage.trim()}
-                aria-label="Send message"
-                style={{ flexShrink: 0 }}
-              />
+              <div style={{ position: 'relative' }}>
+                {pressing && emotionLevel > 0 && (
+                  <div style={{
+                    position: 'absolute',
+                    top: -60,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    fontSize: 32 + (emotionLevel * 6), // Emotion gets bigger
+                    transition: 'all 0.2s',
+                    pointerEvents: 'none',
+                    filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.1))',
+                    zIndex: 10,
+                  }}>
+                    {EXPRESSIVE_EMOJIS[Math.min(emotionLevel, EXPRESSIVE_EMOJIS.length - 1)]}
+                  </div>
+                )}
+                <Button
+                  type="primary"
+                  shape="circle"
+                  icon={<SendOutlined />}
+                  loading={isSending}
+                  disabled={!newMessage.trim()}
+                  aria-label="Send message"
+                  style={{ flexShrink: 0 }}
+                  onMouseDown={startPress}
+                  onMouseUp={() => endPress()}
+                  onMouseLeave={() => { if (pressing) endPress(); }}
+                  onTouchStart={startPress}
+                  onTouchEnd={() => endPress()}
+                />
+              </div>
             </div>
           </form>
         </div>

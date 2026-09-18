@@ -21,7 +21,7 @@ export function usePresence(userId?: string): UsePresenceResult {
   }
 
   if (state.online) {
-    return { online: true, label: 'Đang hoạt động' };
+    return { online: true, label: 'Active now' };
   }
 
   if (!state.lastSeenAt) {
@@ -37,13 +37,13 @@ export function usePresence(userId?: string): UsePresenceResult {
 
   let label = '';
   if (diffMinutes < 1) {
-    label = 'Truy cập vừa xong';
+    label = 'Active just now';
   } else if (diffMinutes < 60) {
-    label = `Truy cập ${diffMinutes} phút trước`;
+    label = `Active ${diffMinutes}m ago`;
   } else if (diffHours < 24) {
-    label = `Truy cập ${diffHours} giờ trước`;
+    label = `Active ${diffHours}h ago`;
   } else {
-    label = `Truy cập ${diffDays} ngày trước`;
+    label = `Active ${diffDays}d ago`;
   }
 
   return {

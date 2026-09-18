@@ -146,6 +146,9 @@ const MessagesPage: React.FC = () => {
   const EXPRESSIVE_EMOJIS = ['🙂', '😀', '😄', '😆', '😂'];
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const shouldScrollBottomRef = useRef<boolean>(true);
+  const prevLastMessageIdRef = useRef<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { presenceMap } = React.useContext(PresenceContext);
   const selectedPresence = usePresence(selectedConversation?.otherUserId);
@@ -203,9 +206,38 @@ const MessagesPage: React.FC = () => {
     loadConversations().catch(console.error);
   }, [loadConversations]);
 
+  const isNearBottom = useCallback(() => {
+    if (!scrollContainerRef.current) return true;
+    const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
+    return scrollHeight - scrollTop - clientHeight < 150;
+  }, []);
+
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    shouldScrollBottomRef.current = true;
+  }, [selectedConversation?.id]);
+
+  useEffect(() => {
+    if (messages.length === 0) return;
+
+    const lastMessage = messages[messages.length - 1];
+    const lastMessageId = lastMessage.id;
+    const isNewMessage = lastMessageId !== prevLastMessageIdRef.current;
+
+    if (shouldScrollBottomRef.current) {
+      shouldScrollBottomRef.current = false;
+      prevLastMessageIdRef.current = lastMessageId;
+      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+      return;
+    }
+
+    if (isNewMessage) {
+      prevLastMessageIdRef.current = lastMessageId;
+      const isMe = lastMessage.sender === 'me';
+      if (isMe || isNearBottom()) {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  }, [messages, isNearBottom]);
 
   useEffect(() => {
     const conversationId = selectedConversation?.id;
@@ -527,7 +559,7 @@ const MessagesPage: React.FC = () => {
         </div>
 
         {/* Messages Area */}
-        <div className="chat-scroll" style={{ flex: 1, padding: '20px 24px', overflowY: 'auto' }}>
+        <div ref={scrollContainerRef} className="chat-scroll" style={{ flex: 1, padding: '20px 24px', overflowY: 'auto' }}>
           {loadingMessages ? (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
               <Spin size="large" />

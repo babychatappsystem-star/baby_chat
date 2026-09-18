@@ -76,7 +76,7 @@ const LoginPage: React.FC = () => {
             ]}
           >
             <Input
-              prefix={<MailOutlined style={{ color: token.colorTextPlaceholder }} />}
+              prefix={<MailOutlined style={{ color: token.colorTextPlaceholder, marginRight: 8 }} />}
               placeholder="Email address"
               size="large"
               autoComplete="off"
@@ -88,7 +88,7 @@ const LoginPage: React.FC = () => {
             rules={[{ required: true, message: 'Password is required' }]}
           >
             <Input.Password
-              prefix={<LockOutlined style={{ color: token.colorTextPlaceholder }} />}
+              prefix={<LockOutlined style={{ color: token.colorTextPlaceholder, marginRight: 8 }} />}
               placeholder="Password"
               size="large"
               autoComplete="current-password"

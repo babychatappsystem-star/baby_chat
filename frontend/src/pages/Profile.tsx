@@ -13,6 +13,8 @@ import {
   Switch,
   Slider,
   InputNumber,
+  Row,
+  Col,
 } from 'antd';
 import { useAntdApp } from '../hooks/useAntdApp';
 import {
@@ -170,10 +172,25 @@ const ProfilePage: React.FC = () => {
   };
 
   return (
-    <div style={{ maxWidth: 560, margin: '0 auto', padding: '24px 0' }}>
-      <Title level={2} style={{ marginBottom: 24 }}>My Profile</Title>
+    <div style={{ maxWidth: 960, margin: '0 auto', padding: '24px 16px' }}>
+      <Flex justify="space-between" align="center" style={{ marginBottom: 24 }}>
+        <Title level={2} style={{ margin: 0 }}>My Profile</Title>
+        <Popconfirm
+          title="Log Out?"
+          description="You will need to log in again to continue."
+          okText="Log Out"
+          cancelText="Cancel"
+          okButtonProps={{ danger: true }}
+          onConfirm={handleLogout}
+        >
+          <Button danger icon={<LogoutOutlined />}>Log Out</Button>
+        </Popconfirm>
+      </Flex>
 
-      {/* Header card: avatar + tên + email */}
+      <Row gutter={[24, 24]}>
+        {/* Cột trái: Thông tin cá nhân */}
+        <Col xs={24} md={10}>
+          {/* Header card: avatar + tên + email */}
       <Card style={{ marginBottom: 24, textAlign: 'center' }}>
         {loadingProfile ? (
           <Skeleton avatar={{ size: 96 }} active paragraph={{ rows: 2 }} title={false} />
@@ -275,8 +292,11 @@ const ProfilePage: React.FC = () => {
           Share this code with others so they can send you a friend request.
         </Text>
       </Card>
+        </Col>
 
-      {/* Thông báo âm thanh */}
+        {/* Cột phải: Cài đặt & Tuỳ chỉnh */}
+        <Col xs={24} md={14}>
+          {/* Thông báo âm thanh */}
       <Card style={{ marginBottom: 24 }}>
         <Flex justify="space-between" align="center">
           <Space>
@@ -373,21 +393,12 @@ const ProfilePage: React.FC = () => {
             />
           </Flex>
         </div>
+            />
+          </Flex>
+        </div>
       </Card>
-
-      {/* Đăng xuất */}
-      <Popconfirm
-        title="Log Out?"
-        description="You will need to log in again to continue."
-        okText="Log Out"
-        cancelText="Cancel"
-        okButtonProps={{ danger: true }}
-        onConfirm={handleLogout}
-      >
-        <Button danger block size="large" icon={<LogoutOutlined />}>
-          Log Out
-        </Button>
-      </Popconfirm>
+        </Col>
+      </Row>
     </div>
   );
 };

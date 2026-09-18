@@ -393,9 +393,7 @@ const ProfilePage: React.FC = () => {
             />
           </Flex>
         </div>
-            />
-          </Flex>
-        </div>
+
       </Card>
         </Col>
       </Row>

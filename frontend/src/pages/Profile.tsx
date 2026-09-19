@@ -233,7 +233,8 @@ const ProfilePage: React.FC = () => {
   const handleUpdateExpressiveSettings = async () => {
     setUpdatingExpressiveSettings(true);
     try {
-      await updateExpressiveChatSettings(thresholds, transitionTime, emojis);
+      const updated = await updateExpressiveChatSettings(thresholds, transitionTime, emojis);
+      window.dispatchEvent(new CustomEvent('profile-updated', { detail: updated }));
       message.success('Expressive chat settings saved');
     } catch {
       message.error('Failed to save settings');
@@ -479,7 +480,7 @@ const ProfilePage: React.FC = () => {
                   Custom Emotion Pack ({emojis.length}/10 icons)
                 </Text>
                 <Text type="secondary" style={{ fontSize: 12 }}>
-                  Emojis progress from level 1 to level {Math.min(thresholds, emojis.length)} when holding the Smile button
+                  Icon #1 is the default chat icon (click to send immediately). Long-press builds up to level {Math.min(thresholds, emojis.length)}.
                 </Text>
               </div>
               <Popover
@@ -524,6 +525,7 @@ const ProfilePage: React.FC = () => {
             >
               {emojis.map((emoji, idx) => {
                 const isActiveInThreshold = idx < thresholds;
+                const isDefault = idx === 0;
                 return (
                   <div
                     key={idx}
@@ -533,12 +535,12 @@ const ProfilePage: React.FC = () => {
                       flexDirection: 'column',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      width: 52,
+                      width: isDefault ? 78 : 52,
                       height: 62,
                       borderRadius: 8,
                       background: isActiveInThreshold ? token.colorBgContainer : 'transparent',
-                      border: `1px solid ${isActiveInThreshold ? token.colorPrimary : token.colorBorderSecondary}`,
-                      boxShadow: isActiveInThreshold ? '0 2px 6px rgba(0,0,0,0.06)' : 'none',
+                      border: `1px solid ${isDefault ? token.colorPrimary : (isActiveInThreshold ? token.colorPrimary : token.colorBorderSecondary)}`,
+                      boxShadow: isDefault ? `0 2px 8px rgba(232, 56, 90, 0.2)` : (isActiveInThreshold ? '0 2px 6px rgba(0,0,0,0.06)' : 'none'),
                       opacity: isActiveInThreshold ? 1 : 0.45,
                       transition: 'all 0.2s ease',
                     }}
@@ -548,12 +550,12 @@ const ProfilePage: React.FC = () => {
                         position: 'absolute',
                         top: 2,
                         left: 4,
-                        fontSize: 10,
+                        fontSize: 9,
                         fontWeight: 700,
-                        color: isActiveInThreshold ? token.colorPrimary : token.colorTextTertiary,
+                        color: isDefault ? token.colorPrimary : (isActiveInThreshold ? token.colorPrimary : token.colorTextTertiary),
                       }}
                     >
-                      #{idx + 1}
+                      {isDefault ? '#1 Default' : `#${idx + 1}`}
                     </span>
                     {emojis.length > 2 && (
                       <Tooltip title="Remove icon">

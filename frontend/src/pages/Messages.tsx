@@ -154,8 +154,11 @@ const MessagesPage: React.FC = () => {
 
   const pressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const emotionLevelRef = useRef<number>(0);
+  const pressStartTimeRef = useRef<number>(0);
+  const pointerDownHandledRef = useRef<boolean>(false);
   const DEFAULT_EXPRESSIVE_EMOJIS = ['🙂', '😀', '😄', '😆', '😂'];
   const [expressiveEmojis, setExpressiveEmojis] = useState<string[]>(DEFAULT_EXPRESSIVE_EMOJIS);
+  const defaultEmoji = (expressiveEmojis.length > 0 ? expressiveEmojis[0] : DEFAULT_EXPRESSIVE_EMOJIS[0]) || '🙂';
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -184,18 +187,25 @@ const MessagesPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    authService
-      .getProfile()
-      .then((p) => {
-        setCurrentUserId(p.userId);
-        localStorage.setItem('userId', p.userId);
-        setThresholds(p.expressiveChatThresholds ?? 5);
-        setTransitionTime(p.expressiveChatTransitionTime ?? 300);
-        if (p.expressiveChatEmojis && p.expressiveChatEmojis.length > 0) {
-          setExpressiveEmojis(p.expressiveChatEmojis);
-        }
-      })
-      .catch((err) => console.error('Failed to load profile', err));
+    const loadProfileData = () => {
+      authService
+        .getProfile()
+        .then((p) => {
+          setCurrentUserId(p.userId);
+          localStorage.setItem('userId', p.userId);
+          setThresholds(p.expressiveChatThresholds ?? 5);
+          setTransitionTime(p.expressiveChatTransitionTime ?? 300);
+          if (p.expressiveChatEmojis && p.expressiveChatEmojis.length > 0) {
+            setExpressiveEmojis(p.expressiveChatEmojis);
+          }
+        })
+        .catch((err) => console.error('Failed to load profile', err));
+    };
+
+    loadProfileData();
+
+    window.addEventListener('profile-updated', loadProfileData);
+    return () => window.removeEventListener('profile-updated', loadProfileData);
   }, []);
 
   const loadConversations = useCallback(async () => {
@@ -401,6 +411,8 @@ const MessagesPage: React.FC = () => {
 
   const startPress = () => {
     if (isSending || !selectedConversation) return;
+    pointerDownHandledRef.current = true;
+    pressStartTimeRef.current = Date.now();
     setPressing(true);
     setEmotionLevel(0);
     emotionLevelRef.current = 0;
@@ -420,11 +432,21 @@ const MessagesPage: React.FC = () => {
     
     if (!pressing) return; // Prevent duplicate triggers
     
-    let finalMessage = newMessage.trim();
+    const duration = Date.now() - pressStartTimeRef.current;
+    const isQuickClick = emotionLevelRef.current === 0 || duration < 250;
     const activeEmojis = expressiveEmojis.length > 0 ? expressiveEmojis : DEFAULT_EXPRESSIVE_EMOJIS;
-    // Always append an emoji (even on quick click: level 0)
-    finalMessage += (finalMessage ? ' ' : '') + activeEmojis[Math.min(emotionLevelRef.current, activeEmojis.length - 1)];
-    setNewMessage('');
+
+    let finalMessage = '';
+    if (isQuickClick) {
+      // Click vào gửi ngay icon mặc định (icon đầu tiên trong bộ setup)
+      finalMessage = activeEmojis[0];
+    } else {
+      // Nhấn giữ (Expressive Chat) gửi icon theo cấp độ cảm xúc
+      const chosenEmoji = activeEmojis[Math.min(emotionLevelRef.current, activeEmojis.length - 1)];
+      const trimmed = newMessage.trim();
+      finalMessage = trimmed ? `${trimmed} ${chosenEmoji}` : chosenEmoji;
+      if (trimmed) setNewMessage('');
+    }
     
     setPressing(false);
     setEmotionLevel(0);
@@ -432,6 +454,18 @@ const MessagesPage: React.FC = () => {
 
     if (finalMessage) {
       handleSendMessage(undefined, finalMessage);
+    }
+
+    setTimeout(() => {
+      pointerDownHandledRef.current = false;
+    }, 200);
+  };
+
+  const handleDefaultEmojiClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!pointerDownHandledRef.current && !isSending && selectedConversation) {
+      const activeEmojis = expressiveEmojis.length > 0 ? expressiveEmojis : DEFAULT_EXPRESSIVE_EMOJIS;
+      handleSendMessage(undefined, activeEmojis[0]);
     }
   };
 
@@ -925,7 +959,7 @@ const MessagesPage: React.FC = () => {
                 <Button type="text" size="small" icon={<Paperclip size={18} />} aria-label="Attach file" disabled />
               </Tooltip>
               <div style={{ position: 'relative' }}>
-                {pressing && (
+                {pressing && emotionLevel > 0 && (
                   <div style={{
                     position: 'absolute',
                     top: -60,
@@ -940,18 +974,35 @@ const MessagesPage: React.FC = () => {
                     {(expressiveEmojis.length > 0 ? expressiveEmojis : DEFAULT_EXPRESSIVE_EMOJIS)[Math.min(emotionLevel, (expressiveEmojis.length > 0 ? expressiveEmojis : DEFAULT_EXPRESSIVE_EMOJIS).length - 1)]}
                   </div>
                 )}
-                <Tooltip title="Hold for Expressive Chat" placement="bottom">
+                <Tooltip title={`Gửi nhanh ${defaultEmoji} • Nhấn giữ để bộc lộ cảm xúc`} placement="bottom">
                   <Button 
                     type="text" 
                     size="small" 
-                    icon={<Smile size={18} />} 
-                    aria-label="Expressive Chat" 
+                    htmlType="button"
+                    aria-label={`Send ${defaultEmoji}`} 
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: 0,
+                      width: 28,
+                      height: 28,
+                      fontSize: 18,
+                      lineHeight: 1,
+                      cursor: 'pointer',
+                      borderRadius: '50%',
+                      transition: 'transform 0.15s ease',
+                      transform: pressing ? 'scale(1.2)' : 'scale(1)',
+                    }}
                     onMouseDown={startPress}
                     onMouseUp={() => endPress()}
                     onMouseLeave={() => { if (pressing) endPress(); }}
                     onTouchStart={startPress}
                     onTouchEnd={() => endPress()}
-                  />
+                    onClick={handleDefaultEmojiClick}
+                  >
+                    <span>{defaultEmoji}</span>
+                  </Button>
                 </Tooltip>
               </div>
               <input

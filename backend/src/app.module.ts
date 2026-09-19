@@ -12,6 +12,7 @@ import { PageModule } from './modules/message/interfaces/page.module';
 import { FriendshipModule } from './modules/friendship/interfaces/friendship.module';
 import { RealtimeModule } from './modules/realtime/realtime.module';
 import { FileModule } from './modules/file/interfaces/file.module';
+import { StickerModule } from './modules/sticker/sticker.module';
 import { EventsModule } from './shared/events/events.module';
 
 @Module({
@@ -45,6 +46,7 @@ import { EventsModule } from './shared/events/events.module';
     PageModule,
     FriendshipModule,
     RealtimeModule,
+    StickerModule,
   ],
   controllers: [AppController],
   providers: [AppService],

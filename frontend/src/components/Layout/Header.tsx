@@ -46,8 +46,12 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
   useEffect(() => {
     authService.getProfile().then(setProfile).catch(() => {});
 
-    // Profile.tsx phát event này sau khi đổi avatar — cập nhật ngay không cần reload.
-    const onProfileUpdated = (e: Event) => setProfile((e as CustomEvent<ProfileDTO>).detail);
+    // Profile.tsx phát event này sau khi đổi avatar hoặc settings — cập nhật/merge ngay không làm mất avatar.
+    const onProfileUpdated = (e: Event) => {
+      const detail = (e as CustomEvent<Partial<ProfileDTO>>).detail;
+      if (!detail) return;
+      setProfile((prev) => (prev ? { ...prev, ...detail } : (detail as ProfileDTO)));
+    };
     window.addEventListener('profile-updated', onProfileUpdated);
     return () => window.removeEventListener('profile-updated', onProfileUpdated);
   }, []);

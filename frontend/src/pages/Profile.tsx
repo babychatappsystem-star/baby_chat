@@ -179,6 +179,7 @@ const ProfilePage: React.FC = () => {
     try {
       await updatePresenceSettings(checked);
       setHidePresence(checked);
+      setProfile((prev) => (prev ? { ...prev, hidePresence: checked } : prev));
       message.success(checked ? 'Presence hidden' : 'Presence visible');
     } catch {
       message.error('Failed to update presence');
@@ -275,7 +276,25 @@ const ProfilePage: React.FC = () => {
     setUpdatingExpressiveSettings(true);
     try {
       const updated = await updateExpressiveChatSettings(thresholds, transitionTime, emojis);
-      window.dispatchEvent(new CustomEvent('profile-updated', { detail: updated }));
+      setProfile((prev) =>
+        prev
+          ? {
+              ...prev,
+              expressiveChatThresholds: thresholds,
+              expressiveChatTransitionTime: transitionTime,
+              expressiveChatEmojis: emojis,
+            }
+          : prev
+      );
+      const fullProfile = profile
+        ? {
+            ...profile,
+            expressiveChatThresholds: thresholds,
+            expressiveChatTransitionTime: transitionTime,
+            expressiveChatEmojis: emojis,
+          }
+        : updated;
+      window.dispatchEvent(new CustomEvent('profile-updated', { detail: fullProfile }));
       message.success('Expressive chat settings saved');
     } catch {
       message.error('Failed to save settings');

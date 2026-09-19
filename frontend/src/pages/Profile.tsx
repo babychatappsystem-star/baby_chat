@@ -35,6 +35,7 @@ import {
   PlusOutlined,
   CloseOutlined,
   SmileOutlined,
+  HolderOutlined,
 } from '@ant-design/icons';
 import EmojiPicker, { Theme, type EmojiClickData } from 'emoji-picker-react';
 import { useDarkMode } from '../hooks/useDarkMode';
@@ -90,6 +91,8 @@ const ProfilePage: React.FC = () => {
   const [thresholds, setThresholds] = useState<number>(5);
   const [transitionTime, setTransitionTime] = useState<number>(300);
   const [emojis, setEmojis] = useState<string[]>(['🙂', '😀', '😄', '😆', '😂']);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [testEmotionLevel, setTestEmotionLevel] = useState(0);
   const [isTesting, setIsTesting] = useState(false);
@@ -204,6 +207,44 @@ const ProfilePage: React.FC = () => {
     if (thresholds > updated.length) {
       setThresholds(updated.length);
     }
+  };
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(index));
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverIndex !== index) {
+      setDragOverIndex(index);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent, index: number) => {
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    if (dragOverIndex === index) {
+      setDragOverIndex(null);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault();
+    if (draggedIndex !== null && draggedIndex !== targetIndex) {
+      const updated = [...emojis];
+      const [moved] = updated.splice(draggedIndex, 1);
+      updated.splice(targetIndex, 0, moved);
+      setEmojis(updated);
+    }
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
   };
 
   const handleApplyPreset = (presetEmojis: string[]) => {
@@ -480,7 +521,7 @@ const ProfilePage: React.FC = () => {
                   Custom Emotion Pack ({emojis.length}/10 icons)
                 </Text>
                 <Text type="secondary" style={{ fontSize: 12 }}>
-                  Icon #1 is the default chat icon (click to send immediately). Long-press builds up to level {Math.min(thresholds, emojis.length)}.
+                  Icon #1 is the default chat icon (click to send immediately). Drag and drop icons to reorder.
                 </Text>
               </div>
               <Popover
@@ -526,26 +567,47 @@ const ProfilePage: React.FC = () => {
               {emojis.map((emoji, idx) => {
                 const isActiveInThreshold = idx < thresholds;
                 const isDefault = idx === 0;
+                const isDragging = draggedIndex === idx;
+                const isOver = dragOverIndex === idx && draggedIndex !== idx;
+
                 return (
                   <div
-                    key={idx}
+                    key={`${emoji}-${idx}`}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, idx)}
+                    onDragOver={(e) => handleDragOver(e, idx)}
+                    onDragLeave={(e) => handleDragLeave(e, idx)}
+                    onDrop={(e) => handleDrop(e, idx)}
+                    onDragEnd={handleDragEnd}
+                    title="Drag and drop to reorder"
                     style={{
                       position: 'relative',
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      width: isDefault ? 78 : 52,
+                      width: isDefault ? 82 : 54,
                       height: 62,
                       borderRadius: 8,
-                      background: isActiveInThreshold ? token.colorBgContainer : 'transparent',
-                      border: `1px solid ${isDefault ? token.colorPrimary : (isActiveInThreshold ? token.colorPrimary : token.colorBorderSecondary)}`,
-                      boxShadow: isDefault ? `0 2px 8px rgba(232, 56, 90, 0.2)` : (isActiveInThreshold ? '0 2px 6px rgba(0,0,0,0.06)' : 'none'),
-                      opacity: isActiveInThreshold ? 1 : 0.45,
-                      transition: 'all 0.2s ease',
+                      background: isOver
+                        ? (isDark ? 'rgba(232, 56, 90, 0.22)' : 'rgba(232, 56, 90, 0.08)')
+                        : (isActiveInThreshold ? token.colorBgContainer : 'transparent'),
+                      border: isOver
+                        ? `2px dashed ${token.colorPrimary}`
+                        : `1px solid ${isDefault ? token.colorPrimary : (isActiveInThreshold ? token.colorPrimary : token.colorBorderSecondary)}`,
+                      boxShadow: isDefault
+                        ? `0 2px 8px rgba(232, 56, 90, 0.2)`
+                        : (isActiveInThreshold ? '0 2px 6px rgba(0,0,0,0.06)' : 'none'),
+                      opacity: isDragging ? 0.35 : (isActiveInThreshold ? 1 : 0.45),
+                      transform: isOver ? 'scale(1.06)' : (isDragging ? 'scale(0.95)' : 'scale(1)'),
+                      cursor: isDragging ? 'grabbing' : 'grab',
+                      transition: 'all 0.18s cubic-bezier(0.4, 0, 0.2, 1)',
+                      userSelect: 'none',
                     }}
                   >
-                    <span
+                    <Flex
+                      align="center"
+                      gap={2}
                       style={{
                         position: 'absolute',
                         top: 2,
@@ -553,10 +615,12 @@ const ProfilePage: React.FC = () => {
                         fontSize: 9,
                         fontWeight: 700,
                         color: isDefault ? token.colorPrimary : (isActiveInThreshold ? token.colorPrimary : token.colorTextTertiary),
+                        pointerEvents: 'none',
                       }}
                     >
-                      {isDefault ? '#1 Default' : `#${idx + 1}`}
-                    </span>
+                      <HolderOutlined style={{ fontSize: 9, color: token.colorTextQuaternary }} />
+                      <span>{isDefault ? '#1 Default' : `#${idx + 1}`}</span>
+                    </Flex>
                     {emojis.length > 2 && (
                       <Tooltip title="Remove icon">
                         <Button
@@ -564,7 +628,12 @@ const ProfilePage: React.FC = () => {
                           size="small"
                           shape="circle"
                           icon={<CloseOutlined style={{ fontSize: 9 }} />}
-                          onClick={() => handleRemoveEmoji(idx)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveEmoji(idx);
+                          }}
+                          onMouseDown={(e) => e.stopPropagation()}
+                          draggable={false}
                           style={{
                             position: 'absolute',
                             top: 2,
@@ -578,7 +647,7 @@ const ProfilePage: React.FC = () => {
                         />
                       </Tooltip>
                     )}
-                    <span style={{ fontSize: 24, marginTop: 12 }}>{emoji}</span>
+                    <span style={{ fontSize: 24, marginTop: 12, pointerEvents: 'none' }}>{emoji}</span>
                   </div>
                 );
               })}

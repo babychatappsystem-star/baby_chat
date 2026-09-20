@@ -21,8 +21,9 @@ export interface MessageNewPayload {
   messageId: string;
   senderId: string;
   content: string;
-  type: string; // 'text' | 'image'
+  type: string; // 'text' | 'image' | 'sticker'
   fileUrl?: string | null; // URL ảnh khi type='image'
+  stickerUrl?: string | null; // URL ảnh khi type='sticker'
   replyId?: string;
   replySnippet?: string;
   replySenderId?: string;

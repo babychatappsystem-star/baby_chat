@@ -48,6 +48,7 @@ export class DomainEventsBridge {
         content: event.content,
         type: fullMessage?.type ?? 'text',
         fileUrl,
+        stickerUrl: fullMessage?.stickerUrl,
         replyId: fullMessage?.replyId,
         replySnippet: fullMessage?.replySnippet,
         replySenderId: fullMessage?.replySenderId,

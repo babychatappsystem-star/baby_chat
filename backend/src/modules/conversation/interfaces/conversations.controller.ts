@@ -155,6 +155,7 @@ export class ConversationsController {
       content: dto.content,
       type: dto.type,
       fileId: dto.fileId,
+      stickerId: dto.stickerId,
       replyId: dto.replyId?.toString(),
     });
     // Chỉ resolve URL cho image message (mapper cũng gate lại theo type).

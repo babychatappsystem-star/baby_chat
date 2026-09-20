@@ -13,6 +13,12 @@ import {
   FileNotFoundException,
   NotParticipantException,
 } from 'src/shared/exceptions/domain-exceptions';
+import {
+  InvalidMessageException,
+  StickerNotFoundException,
+  StickerNotAllowedForMessageTypeException,
+} from 'src/shared/exceptions/sticker-exceptions';
+import { IStickerRepository } from 'src/modules/sticker/domain/i-sticker.repository';
 import { IEventBus, EVENT_BUS } from 'src/shared/events/event-bus';
 import { MessageSentEvent } from 'src/modules/message/domain/message-sent.event';
 import { PageCreatedEvent } from 'src/modules/message/domain/page-created.event';
@@ -24,6 +30,7 @@ export interface SendMessageCommand {
   type?: MessageType;
   fileId?: string;
   replyId?: string;
+  stickerId?: string;
 }
 
 // Use case gửi tin nhắn:
@@ -38,6 +45,7 @@ export class SendMessageUseCase {
     @Inject(IConversationRepository) private readonly conversationRepository: IConversationRepository,
     @Inject(IPageRepository) private readonly pageRepository: IPageRepository,
     @Inject(IFileRepository) private readonly fileRepository: IFileRepository,
+    @Inject(IStickerRepository) private readonly stickerRepository: IStickerRepository,
     @Inject(EVENT_BUS) private readonly eventBus: IEventBus,
   ) {}
 
@@ -52,6 +60,17 @@ export class SendMessageUseCase {
     // File validation — chốt chặn thật (không tin mỗi lớp DTO; use case có thể được gọi từ chỗ khác).
     // - Chỉ image message mới được đính fileId → combo text+fileId bị reject (lỗ hổng #1).
     // - Mọi fileId được persist đều phải tồn tại + thuộc về sender.
+    // Sticker validation:
+    let stickerUrl: string | undefined;
+    if (command.type === 'sticker') {
+      if (!command.stickerId) throw new InvalidMessageException('Sticker message requires stickerId');
+      const stickerItem = await this.stickerRepository.findItemById(command.stickerId);
+      if (!stickerItem) throw new StickerNotFoundException(command.stickerId);
+      stickerUrl = stickerItem.url;
+    } else if (command.stickerId) {
+      throw new StickerNotAllowedForMessageTypeException();
+    }
+
     if (command.type === 'image') {
       if (!command.fileId) throw new FileNotFoundException();
       const file = await this.fileRepository.findById(command.fileId);
@@ -86,6 +105,8 @@ export class SendMessageUseCase {
       replyId: command.replyId,
       replySnippet,
       replySenderId,
+      stickerId: command.stickerId,
+      stickerUrl,
     });
 
     const MAX_ATTEMPTS = 5;

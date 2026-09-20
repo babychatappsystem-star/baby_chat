@@ -1,9 +1,10 @@
 import { generateObjectIdHex } from 'src/shared/utils/id-generator';
+import { InvalidMessageException } from 'src/shared/exceptions/sticker-exceptions';
 
 // Độ dài snippet lưu kèm để render reply UI. Cắt ngắn nhưng đủ để user nhận ra context.
 export const REPLY_SNIPPET_MAX_LENGTH = 80;
 
-export type MessageType = 'text' | 'image';
+export type MessageType = 'text' | 'image' | 'sticker';
 
 export interface CreateMessageProps {
   senderId: string;
@@ -14,6 +15,8 @@ export interface CreateMessageProps {
   replySnippet?: string;
   replySenderId?: string;
   reactions?: Array<{ userId: string; emoji: string }>;
+  stickerId?: string;
+  stickerUrl?: string;
 }
 
 export class MessageEntity {
@@ -28,6 +31,8 @@ export class MessageEntity {
   readonly replySnippet?: string;
   readonly replySenderId?: string;
   readonly reactions: Array<{ userId: string; emoji: string }>;
+  readonly stickerId?: string;
+  readonly stickerUrl?: string;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 
@@ -41,6 +46,8 @@ export class MessageEntity {
     replySnippet?: string;
     replySenderId?: string;
     reactions: Array<{ userId: string; emoji: string }>;
+    stickerId?: string;
+    stickerUrl?: string;
     createdAt: Date;
     updatedAt: Date;
   }) {
@@ -53,6 +60,8 @@ export class MessageEntity {
     this.replySnippet = props.replySnippet;
     this.replySenderId = props.replySenderId;
     this.reactions = props.reactions;
+    this.stickerId = props.stickerId;
+    this.stickerUrl = props.stickerUrl;
     this.createdAt = props.createdAt;
     this.updatedAt = props.updatedAt;
   }
@@ -73,13 +82,18 @@ export class MessageEntity {
 
     const type: MessageType = props.type ?? 'text';
     // Image message: fileId bắt buộc, content có thể rỗng (caption optional).
+    // Sticker message: stickerId và stickerUrl bắt buộc, content có thể rỗng.
     // Text message: content bắt buộc.
     if (type === 'image') {
       if (!props.fileId) {
-        throw new Error('Image message requires a fileId');
+        throw new InvalidMessageException('Image message requires a fileId');
+      }
+    } else if (type === 'sticker') {
+      if (!props.stickerId || !props.stickerUrl) {
+        throw new InvalidMessageException('Sticker message requires a stickerId and stickerUrl');
       }
     } else if (!props.content || props.content.trim().length === 0) {
-      throw new Error('Message content cannot be empty');
+      throw new InvalidMessageException('Message content cannot be empty');
     }
 
     const now = new Date();
@@ -93,6 +107,8 @@ export class MessageEntity {
       replySnippet: props.replySnippet?.slice(0, REPLY_SNIPPET_MAX_LENGTH),
       replySenderId: props.replySenderId,
       reactions: props.reactions ?? [],
+      stickerId: props.stickerId,
+      stickerUrl: props.stickerUrl,
       createdAt: now,
       updatedAt: now,
     });
@@ -109,6 +125,8 @@ export class MessageEntity {
     replySnippet?: string;
     replySenderId?: string;
     reactions?: Array<{ userId: string; emoji: string }>;
+    stickerId?: string;
+    stickerUrl?: string;
     createdAt: Date;
     updatedAt: Date;
   }): MessageEntity {

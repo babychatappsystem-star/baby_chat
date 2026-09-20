@@ -26,12 +26,20 @@ class MessageSubdoc {
   declare content: string;
 
   // Loại tin nhắn. Data cũ thiếu field → mapper default 'text'.
-  @Prop({ required: false, enum: ['text', 'image'], default: 'text' })
+  @Prop({ required: false, enum: ['text', 'image', 'sticker'], default: 'text' })
   declare type?: string;
 
   // Tham chiếu file ảnh (collection 'files') khi type='image'.
   @Prop({ required: false })
   declare fileId?: string;
+
+  // Tham chiếu sticker (collection 'sticker_packs') khi type='sticker'.
+  @Prop({ type: mongoose.Schema.Types.ObjectId, required: false })
+  declare stickerId?: mongoose.Types.ObjectId;
+
+  // Cache url sticker để client render mà không cần lookup lại sticker pack.
+  @Prop({ required: false })
+  declare stickerUrl?: string;
 
   @Prop({ default: Date.now })
   declare createdAt: Date;

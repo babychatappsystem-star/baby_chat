@@ -20,6 +20,7 @@ import {
 import { AddReactionUseCase } from 'src/modules/conversation/application/use-cases/add-reaction.usecase';
 import { RemoveReactionUseCase } from 'src/modules/conversation/application/use-cases/remove-reaction.usecase';
 import { FileModule } from 'src/modules/file/interfaces/file.module';
+import { StickerModule } from 'src/modules/sticker/sticker.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { FileModule } from 'src/modules/file/interfaces/file.module';
     forwardRef(() => UserModule),
     PageModule,
     FileModule,
+    StickerModule,
   ],
   controllers: [ConversationsController],
   providers: [

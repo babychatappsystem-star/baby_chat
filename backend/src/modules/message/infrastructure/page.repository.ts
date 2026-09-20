@@ -78,6 +78,8 @@ export class PageRepository implements IPageRepository {
             replySenderId: message.replySenderId
               ? new mongoose.Types.ObjectId(message.replySenderId)
               : undefined,
+            stickerId: message.stickerId ? new mongoose.Types.ObjectId(message.stickerId) : undefined,
+            stickerUrl: message.stickerUrl,
             createdAt: message.createdAt,
             updatedAt: message.updatedAt,
           },

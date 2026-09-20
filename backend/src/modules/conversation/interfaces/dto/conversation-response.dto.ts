@@ -116,11 +116,17 @@ export class MessageResponseDto {
   @ApiProperty({ example: 'Hello!', description: 'Có thể rỗng nếu là image message' })
   content: string;
 
-  @ApiProperty({ enum: ['text', 'image'], example: 'text' })
+  @ApiProperty({ enum: ['text', 'image', 'sticker'], example: 'text' })
   type: string;
 
   @ApiPropertyOptional({ example: '/uploads/abc.webp', description: 'URL ảnh khi type=image (resolve từ fileId)' })
   fileUrl?: string | null;
+
+  @ApiPropertyOptional({ example: 'https://...', description: 'URL sticker khi type=sticker' })
+  stickerUrl?: string | null;
+
+  @ApiPropertyOptional({ example: '6aafa6215ef6eab1b18355bc', description: 'ID sticker khi type=sticker' })
+  stickerId?: string | null;
 
   @ApiPropertyOptional({ example: '64a1b2c3d4e5f6a7b8c9d0e4', nullable: true })
   replyId?: string;

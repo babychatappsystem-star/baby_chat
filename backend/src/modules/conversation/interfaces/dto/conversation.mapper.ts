@@ -67,6 +67,8 @@ export class ConversationResponseMapper {
       content: entity.content,
       type: entity.type,
       fileUrl: entity.type === 'image' ? (fileUrl ?? null) : null,
+      stickerUrl: entity.type === 'sticker' ? entity.stickerUrl : null,
+      stickerId: entity.type === 'sticker' ? entity.stickerId : null,
       replyId: entity.replyId,
       replySnippet: entity.replySnippet,
       replySenderId: entity.replySenderId,

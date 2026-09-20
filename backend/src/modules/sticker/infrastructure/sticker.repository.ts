@@ -34,8 +34,9 @@ export class StickerRepository implements IStickerRepository {
       return null;
     }
     
+    const objectId = new Types.ObjectId(stickerId);
     // Find the pack that contains the item
-    const doc = await this.stickerPackModel.findOne({ 'items._id': stickerId }).exec();
+    const doc = await this.stickerPackModel.findOne({ 'items._id': objectId }).exec();
     if (!doc) {
       return null;
     }

@@ -87,7 +87,10 @@ export interface ConversationPagesResponse {
 export interface MessageDTO {
   id: string;
   senderId?: string;
-  content: string;
+  content?: string;
+  type?: 'text' | 'image' | 'sticker';
+  fileUrl?: string | null;
+  stickerUrl?: string | null;
   replyId?: string;
   replySnippet?: string;
   replySenderId?: string;
@@ -109,8 +112,25 @@ export interface VerifyRegistrationPayload {
 
 export interface SendMessagePayload {
   conversationId: string;
-  content: string;
+  content?: string;
+  type?: 'text' | 'image' | 'sticker';
+  fileId?: string;
+  stickerId?: string;
   replyId?: string;
+}
+
+// ── Stickers ──
+export interface StickerItemDTO {
+  id: string;
+  url: string;
+}
+
+export interface StickerPackDTO {
+  id: string;
+  name: string;
+  thumbnailUrl: string;
+  isActive: boolean;
+  items: StickerItemDTO[];
 }
 
 // ── Friends ──

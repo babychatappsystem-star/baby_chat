@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Phone, Video, MoreVertical, Smile, Paperclip, MessageCircle, Reply, X } from 'lucide-react';
+import { Phone, Video, MoreVertical, Smile, Paperclip, MessageCircle, Reply, X, Sticker } from 'lucide-react';
 import { Input, Button, Badge, Avatar, Tooltip, Typography, Space, Spin, Popover, message as antdMessage } from 'antd';
 import EmojiPicker, { Theme, type EmojiClickData } from 'emoji-picker-react';
 import { SearchOutlined, SendOutlined, TeamOutlined, UserOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
 import isYesterday from 'dayjs/plugin/isYesterday';
+import { StickerPicker } from '../components/feature/StickerPicker';
 import { conversationService } from '../services/conversationService';
 
 dayjs.extend(isToday);
@@ -87,7 +88,7 @@ const conversationTitle = (conv: ConversationDTO, currentUserId: string): string
 const mapMessage = (msg: MessageDTO, currentUserId: string): IMessage => ({
   id: msg.id,
   sender: msg.senderId && msg.senderId === currentUserId ? 'me' : msg.senderId ?? 'unknown',
-  text: msg.content,
+  text: msg.content ?? '',
   timestamp: formatTime(msg.createdAt),
   rawDate: msg.createdAt ?? new Date().toISOString(),
   replyId: msg.replyId,
@@ -150,6 +151,7 @@ const MessagesPage: React.FC = () => {
   const [thresholds, setThresholds] = useState<number>(5);
   const [transitionTime, setTransitionTime] = useState<number>(300);
   const [pressing, setPressing] = useState(false);
+  const [stickerPickerOpen, setStickerPickerOpen] = useState(false);
   const [emotionLevel, setEmotionLevel] = useState(0);
 
   const pressTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -406,6 +408,23 @@ const MessagesPage: React.FC = () => {
     } finally {
       setIsSending(false);
       inputRef.current?.focus();
+    }
+  };
+
+  const handleSendSticker = async (stickerId: string) => {
+    if (isSending || !selectedConversation) return;
+    setIsSending(true);
+    try {
+      await conversationService.sendMessage({
+        conversationId: selectedConversation.id,
+        type: 'sticker',
+        stickerId,
+      });
+    } catch {
+      console.error('Failed to send sticker');
+    } finally {
+      setIsSending(false);
+      setStickerPickerOpen(false);
     }
   };
 
@@ -958,6 +977,18 @@ const MessagesPage: React.FC = () => {
               <Tooltip title="Feature coming soon">
                 <Button type="text" size="small" icon={<Paperclip size={18} />} aria-label="Attach file" disabled />
               </Tooltip>
+              <Popover
+                content={<StickerPicker onSelect={handleSendSticker} />}
+                trigger="click"
+                open={stickerPickerOpen}
+                onOpenChange={setStickerPickerOpen}
+                placement="topLeft"
+                arrow={false}
+              >
+                <Tooltip title="Send a sticker">
+                  <Button type="text" size="small" icon={<Sticker size={18} />} aria-label="Send sticker" />
+                </Tooltip>
+              </Popover>
               <div style={{ position: 'relative' }}>
                 {pressing && emotionLevel > 0 && (
                   <div style={{

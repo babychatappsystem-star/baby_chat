@@ -48,6 +48,9 @@ interface IMessage {
   sender: string;
   senderName?: string;
   text: string;
+  type: 'text' | 'image' | 'sticker';
+  stickerUrl?: string | null;
+  fileUrl?: string | null;
   timestamp: string;
   rawDate: string;
   replyId?: string;
@@ -89,6 +92,9 @@ const mapMessage = (msg: MessageDTO, currentUserId: string): IMessage => ({
   id: msg.id,
   sender: msg.senderId && msg.senderId === currentUserId ? 'me' : msg.senderId ?? 'unknown',
   text: msg.content ?? '',
+  type: msg.type ?? 'text',
+  stickerUrl: msg.stickerUrl,
+  fileUrl: msg.fileUrl,
   timestamp: formatTime(msg.createdAt),
   rawDate: msg.createdAt ?? new Date().toISOString(),
   replyId: msg.replyId,
@@ -315,7 +321,10 @@ const MessagesPage: React.FC = () => {
       {
         id: payload.messageId,
         sender: payload.senderId === currentUserId ? 'me' : payload.senderId,
-        text: payload.content,
+        text: payload.content ?? '',
+        type: payload.type ?? 'text',
+        stickerUrl: payload.stickerUrl,
+        fileUrl: payload.fileUrl,
         timestamp: formatTime(payload.createdAt),
         rawDate: payload.createdAt ?? new Date().toISOString(),
         replyId: payload.replyId,
@@ -804,15 +813,23 @@ const MessagesPage: React.FC = () => {
                       <div
                         id={`msg-${msg.id}`}
                         style={{
-                          padding: '9px 14px',
-                          borderRadius: isMe 
-                            ? `18px ${isFirstInGroup ? '18px' : '4px'} 4px 18px` 
-                            : `${isFirstInGroup ? '18px' : '4px'} 18px 18px 4px`,
-                          background: isMe ? token.colorPrimary : token.colorBgContainer,
-                          border: isMe ? 'none' : `1px solid ${highlightedMessageId === msg.id ? token.colorPrimary : token.colorBorderSecondary}`,
-                          boxShadow: highlightedMessageId === msg.id
-                            ? `0 0 0 3px ${token.colorPrimary}, 0 4px 14px rgba(232, 56, 90, 0.4)`
-                            : '0 1px 3px rgba(0,0,0,0.07)',
+                          padding: msg.type === 'sticker' ? 0 : '9px 14px',
+                          borderRadius: msg.type === 'sticker' 
+                            ? 8 
+                            : (isMe 
+                                ? `18px ${isFirstInGroup ? '18px' : '4px'} 4px 18px` 
+                                : `${isFirstInGroup ? '18px' : '4px'} 18px 18px 4px`),
+                          background: msg.type === 'sticker' 
+                            ? 'transparent' 
+                            : (isMe ? token.colorPrimary : token.colorBgContainer),
+                          border: msg.type === 'sticker' 
+                            ? 'none' 
+                            : (isMe ? 'none' : `1px solid ${highlightedMessageId === msg.id ? token.colorPrimary : token.colorBorderSecondary}`),
+                          boxShadow: msg.type === 'sticker' 
+                            ? 'none' 
+                            : (highlightedMessageId === msg.id
+                                ? `0 0 0 3px ${token.colorPrimary}, 0 4px 14px rgba(232, 56, 90, 0.4)`
+                                : '0 1px 3px rgba(0,0,0,0.07)'),
                           transition: 'box-shadow 0.3s ease, border-color 0.3s ease',
                           wordBreak: 'break-word',
                         }}
@@ -863,9 +880,21 @@ const MessagesPage: React.FC = () => {
                             </span>
                           </div>
                         )}
-                        <Text style={{ display: 'block', color: isMe ? '#fff' : undefined, lineHeight: 1.5 }}>
-                          {msg.text}
-                        </Text>
+                        {msg.type === 'sticker' && msg.stickerUrl ? (
+                          <img
+                            src={msg.stickerUrl}
+                            alt="Sticker"
+                            style={{
+                              maxWidth: 160,
+                              borderRadius: 8,
+                              display: 'block'
+                            }}
+                          />
+                        ) : (
+                          <Text style={{ display: 'block', color: isMe ? '#fff' : undefined, lineHeight: 1.5 }}>
+                            {msg.text}
+                          </Text>
+                        )}
                       </div>
                     </Tooltip>
 

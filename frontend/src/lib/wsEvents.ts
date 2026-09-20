@@ -16,6 +16,9 @@ export interface MessageNewPayload {
   messageId: string;
   senderId: string;
   content: string;
+  type?: 'text' | 'image' | 'sticker';
+  stickerUrl?: string | null;
+  fileUrl?: string | null;
   replyId?: string;
   replySnippet?: string;
   replySenderId?: string;

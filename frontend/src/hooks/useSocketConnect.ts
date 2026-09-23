@@ -14,6 +14,11 @@ export function useSocketConnect(handler: () => void, enabled = true): void {
 
     const listener = () => handlerRef.current();
     socket.on('connect', listener);
+
+    if (socket.connected) {
+      listener();
+    }
+
     return () => {
       socket.off('connect', listener);
     };

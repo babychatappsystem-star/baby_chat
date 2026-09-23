@@ -17,13 +17,29 @@ export function useSocketEvent<E extends EventName>(
 
   useEffect(() => {
     if (!enabled) return;
-    const socket = getSocket();
-    if (!socket) return;
 
-    const listener = (payload: PayloadOf<E>) => handlerRef.current(payload);
-    socket.on(eventName, listener as never);
+    let socket = getSocket();
+    let listener: ((payload: PayloadOf<E>) => void) | null = null;
+
+    const setup = () => {
+      socket = getSocket();
+      if (!socket) return;
+
+      listener = (payload: PayloadOf<E>) => handlerRef.current(payload);
+      socket.on(eventName, listener as never);
+    };
+
+    if (socket) {
+      setup();
+    } else {
+      window.addEventListener('socket_initialized', setup, { once: true });
+    }
+
     return () => {
-      socket.off(eventName, listener as never);
+      if (socket && listener) {
+        socket.off(eventName, listener as never);
+      }
+      window.removeEventListener('socket_initialized', setup);
     };
   }, [eventName, enabled]);
 }

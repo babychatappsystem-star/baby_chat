@@ -9,18 +9,33 @@ export function useSocketConnect(handler: () => void, enabled = true): void {
 
   useEffect(() => {
     if (!enabled) return;
-    const socket = getSocket();
-    if (!socket) return;
 
-    const listener = () => handlerRef.current();
-    socket.on('connect', listener);
+    let socket = getSocket();
+    let listener: (() => void) | null = null;
 
-    if (socket.connected) {
-      listener();
+    const setup = () => {
+      socket = getSocket();
+      if (!socket) return;
+      
+      listener = () => handlerRef.current();
+      socket.on('connect', listener);
+
+      if (socket.connected) {
+        listener();
+      }
+    };
+
+    if (socket) {
+      setup();
+    } else {
+      window.addEventListener('socket_initialized', setup, { once: true });
     }
 
     return () => {
-      socket.off('connect', listener);
+      if (socket && listener) {
+        socket.off('connect', listener);
+      }
+      window.removeEventListener('socket_initialized', setup);
     };
   }, [enabled]);
 }

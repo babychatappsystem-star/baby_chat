@@ -46,6 +46,8 @@ export function connectSocket(accessToken: string): AppSocket {
     }
   });
 
+  window.dispatchEvent(new Event('socket_initialized'));
+
   return socket;
 }
 

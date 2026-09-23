@@ -54,6 +54,24 @@ export class UserDocument extends Document {
 
   @Prop({ type: [String], default: ['🙂', '😀', '😄', '😆', '😂'] })
   declare expressiveChatEmojis: string[];
+
+  // Web Push Subscriptions
+  @Prop({
+    type: [
+      {
+        endpoint: { type: String, required: true },
+        keys: {
+          p256dh: { type: String, required: true },
+          auth: { type: String, required: true },
+        },
+      },
+    ],
+    default: [],
+  })
+  declare pushSubscriptions: Array<{
+    endpoint: string;
+    keys: { p256dh: string; auth: string };
+  }>;
 }
 
 export const UserSchema = SchemaFactory.createForClass(UserDocument);

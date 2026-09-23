@@ -14,6 +14,7 @@ import { RealtimeModule } from './modules/realtime/realtime.module';
 import { FileModule } from './modules/file/interfaces/file.module';
 import { StickerModule } from './modules/sticker/sticker.module';
 import { EventsModule } from './shared/events/events.module';
+import { NotificationModule } from './modules/notification/notification.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { EventsModule } from './shared/events/events.module';
     FriendshipModule,
     RealtimeModule,
     StickerModule,
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

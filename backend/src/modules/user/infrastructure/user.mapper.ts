@@ -21,6 +21,7 @@ export class UserMapper {
       expressiveChatThresholds: doc.expressiveChatThresholds,
       expressiveChatTransitionTime: doc.expressiveChatTransitionTime,
       expressiveChatEmojis: doc.expressiveChatEmojis,
+      pushSubscriptions: doc.pushSubscriptions,
     });
   }
 
@@ -37,6 +38,7 @@ export class UserMapper {
       expressiveChatThresholds: entity.expressiveChatThresholds,
       expressiveChatTransitionTime: entity.expressiveChatTransitionTime,
       expressiveChatEmojis: entity.expressiveChatEmojis,
+      pushSubscriptions: entity.pushSubscriptions,
     };
   }
 }

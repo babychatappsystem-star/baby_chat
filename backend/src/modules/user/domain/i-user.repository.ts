@@ -20,6 +20,9 @@ export abstract class IUserRepository {
   abstract updateHidePresence(userId: string, hide: boolean): Promise<void>;
   // Cập nhật cấu hình Expressive Chat.
   abstract updateExpressiveChatSettings(userId: string, thresholds: number, transitionTime: number, emojis?: string[]): Promise<void>;
+  // Web Push Notifications
+  abstract addPushSubscription(userId: string, subscription: { endpoint: string; keys: { p256dh: string; auth: string } }): Promise<void>;
+  abstract removePushSubscription(userId: string, endpoint: string): Promise<void>;
 }
 
 export const USER_REPOSITORY = IUserRepository;

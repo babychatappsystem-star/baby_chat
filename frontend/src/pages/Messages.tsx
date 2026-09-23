@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Phone, Video, MoreVertical, Smile, Paperclip, MessageCircle, Reply, X, Sticker } from 'lucide-react';
+import { Phone, Video, MoreVertical, Smile, Paperclip, MessageCircle, Reply, X, Sticker, Bell, BellOff } from 'lucide-react';
 import { Input, Button, Badge, Avatar, Tooltip, Typography, Space, Spin, Popover, message as antdMessage } from 'antd';
 import EmojiPicker, { Theme, type EmojiClickData } from 'emoji-picker-react';
 import { SearchOutlined, SendOutlined, TeamOutlined, UserOutlined } from '@ant-design/icons';
@@ -20,6 +20,7 @@ import { useSocketConnect } from '../hooks/useSocketConnect';
 import { WS_EVENTS } from '../lib/wsEvents';
 import { PresenceContext } from '../contexts/PresenceContext';
 import { usePresence } from '../hooks/usePresence';
+import { usePushNotifications } from '../shared/hooks/usePushNotifications';
 import environmentLoader from '../config/environmentLoader';
 
 const { Text, Title } = Typography;
@@ -137,6 +138,7 @@ const EmptyChatState: React.FC<{ name: string; onSend: () => void }> = ({ name, 
 const MessagesPage: React.FC = () => {
   const token = useThemeToken();
   const isDark = useDarkMode();
+  const pushNotifications = usePushNotifications();
   const [currentUserId, setCurrentUserId] = useState<string>(
     () => localStorage.getItem('userId') ?? ''
   );
@@ -520,9 +522,22 @@ const MessagesPage: React.FC = () => {
         <div style={{ padding: '16px 16px 12px', borderBottom: `1px solid ${token.colorBorderSecondary}` }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
             <Title level={4} style={{ margin: 0 }}>Chats</Title>
-            <Badge count={conversations.reduce((s, c) => s + c.unread, 0)} size="small">
-              <Button type="text" size="small" icon={<TeamOutlined />} aria-label="All conversations" />
-            </Badge>
+            <Space>
+              <Tooltip title={!pushNotifications.isSupported ? "Trình duyệt không hỗ trợ Push (yêu cầu HTTPS hoặc localhost)" : (pushNotifications.isSubscribed ? "Đã bật thông báo" : "Bật thông báo")}>
+                <Button
+                  type="text"
+                  size="small"
+                  onClick={pushNotifications.subscribeToPush}
+                  disabled={!pushNotifications.isSupported || pushNotifications.isSubscribed || pushNotifications.isLoading}
+                  icon={pushNotifications.isSubscribed ? <Bell size={16} color={token.colorSuccess} /> : <BellOff size={16} color={!pushNotifications.isSupported ? token.colorTextPlaceholder : undefined} />}
+                  aria-label="Push Notifications"
+                  loading={pushNotifications.isLoading}
+                />
+              </Tooltip>
+              <Badge count={conversations.reduce((s, c) => s + c.unread, 0)} size="small">
+                <Button type="text" size="small" icon={<TeamOutlined />} aria-label="All conversations" />
+              </Badge>
+            </Space>
           </div>
           <Input
             placeholder="Search..."

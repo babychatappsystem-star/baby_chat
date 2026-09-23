@@ -123,4 +123,25 @@ export class UserRepository implements IUserRepository {
       { $set: updateDoc }
     );
   }
+
+  // Web Push Notifications
+  async addPushSubscription(userId: string, subscription: { endpoint: string; keys: { p256dh: string; auth: string } }): Promise<void> {
+    // Add to array, but we might want to avoid duplicates by endpoint
+    // Using $pull first then $push is a simple way to replace if endpoint exists
+    await this.userModel.updateOne(
+      { _id: userId },
+      { $pull: { pushSubscriptions: { endpoint: subscription.endpoint } } }
+    );
+    await this.userModel.updateOne(
+      { _id: userId },
+      { $push: { pushSubscriptions: subscription } }
+    );
+  }
+
+  async removePushSubscription(userId: string, endpoint: string): Promise<void> {
+    await this.userModel.updateOne(
+      { _id: userId },
+      { $pull: { pushSubscriptions: { endpoint } } }
+    );
+  }
 }

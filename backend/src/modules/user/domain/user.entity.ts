@@ -21,6 +21,10 @@ export class UserEntity {
   readonly expressiveChatThresholds: number;
   readonly expressiveChatTransitionTime: number;
   readonly expressiveChatEmojis: string[];
+  readonly pushSubscriptions: Array<{
+    endpoint: string;
+    keys: { p256dh: string; auth: string };
+  }>;
 
   private constructor(props: {
     id?: string;
@@ -37,6 +41,10 @@ export class UserEntity {
     expressiveChatThresholds?: number;
     expressiveChatTransitionTime?: number;
     expressiveChatEmojis?: string[];
+    pushSubscriptions?: Array<{
+      endpoint: string;
+      keys: { p256dh: string; auth: string };
+    }>;
   }) {
     this.id = props.id;
     this.username = props.username;
@@ -52,6 +60,7 @@ export class UserEntity {
     this.expressiveChatThresholds = props.expressiveChatThresholds ?? 5;
     this.expressiveChatTransitionTime = props.expressiveChatTransitionTime ?? 300;
     this.expressiveChatEmojis = props.expressiveChatEmojis ?? ['🙂', '😀', '😄', '😆', '😂'];
+    this.pushSubscriptions = props.pushSubscriptions ?? [];
   }
 
   // Tạo user MỚI. Password phải đã được hash trước khi truyền vào (hash ở use case).
@@ -94,6 +103,10 @@ export class UserEntity {
     expressiveChatThresholds?: number;
     expressiveChatTransitionTime?: number;
     expressiveChatEmojis?: string[];
+    pushSubscriptions?: Array<{
+      endpoint: string;
+      keys: { p256dh: string; auth: string };
+    }>;
   }): UserEntity {
     return new UserEntity(props);
   }

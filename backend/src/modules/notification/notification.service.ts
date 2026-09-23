@@ -54,9 +54,6 @@ export class NotificationService implements OnModuleInit {
         // Skip sending push to the sender
         if (participantId === event.senderId) continue;
 
-        // Skip sending push if the user is currently online (has active WS connection)
-        if (this.presenceService.isConnected(participantId)) continue;
-
         // User is offline, find their push subscriptions
         const user = await this.userRepository.findById(participantId);
         if (!user || !user.pushSubscriptions || user.pushSubscriptions.length === 0) continue;

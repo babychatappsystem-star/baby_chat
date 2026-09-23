@@ -5,44 +5,59 @@ self.addEventListener('push', (event) => {
     const data = event.data.json();
     
     event.waitUntil(
-      self.registration.getNotifications().then((notifications) => {
-        let currentNotification;
-        let messageCount = 1;
-
-        // Find existing notification (we use a static tag to group them)
-        for (let i = 0; i < notifications.length; i++) {
-          if (notifications[i].tag === 'chat-messages') {
-            currentNotification = notifications[i];
+      clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+        let isFocused = false;
+        for (let i = 0; i < windowClients.length; i++) {
+          if (windowClients[i].visibilityState === 'visible' && windowClients[i].focused) {
+            isFocused = true;
             break;
           }
         }
 
-        let title = data.title;
-        let body = data.body;
-        
-        if (currentNotification) {
-          // Calculate how many messages we have now
-          const prevCount = currentNotification.data && currentNotification.data.messageCount 
-            ? currentNotification.data.messageCount 
-            : 1;
-            
-          messageCount = prevCount + 1;
-          title = 'BabyChat';
-          body = `Bạn có ${messageCount} tin nhắn mới...`;
-          
-          // Close the old notification before showing the new one
-          currentNotification.close();
+        if (isFocused) {
+          // App is currently open and focused by the user, skip notification
+          return Promise.resolve();
         }
 
-        return self.registration.showNotification(title, {
-          body: body,
-          icon: '/favicon.ico',
-          badge: '/favicon.ico', // Optional badge
-          tag: 'chat-messages',
-          data: {
-            url: data.url,
-            messageCount: messageCount
+        return self.registration.getNotifications().then((notifications) => {
+          let currentNotification;
+          let messageCount = 1;
+
+          // Find existing notification (we use a static tag to group them)
+          for (let i = 0; i < notifications.length; i++) {
+            if (notifications[i].tag === 'chat-messages') {
+              currentNotification = notifications[i];
+              break;
+            }
           }
+
+          let title = data.title;
+          let body = data.body;
+          
+          if (currentNotification) {
+            // Calculate how many messages we have now
+            const prevCount = currentNotification.data && currentNotification.data.messageCount 
+              ? currentNotification.data.messageCount 
+              : 1;
+              
+            messageCount = prevCount + 1;
+            title = 'BabyChat';
+            body = `Bạn có ${messageCount} tin nhắn mới...`;
+            
+            // Close the old notification before showing the new one
+            currentNotification.close();
+          }
+
+          return self.registration.showNotification(title, {
+            body: body,
+            icon: '/favicon.ico',
+            badge: '/favicon.ico', // Optional badge
+            tag: 'chat-messages',
+            data: {
+              url: data.url,
+              messageCount: messageCount
+            }
+          });
         });
       })
     );

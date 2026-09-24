@@ -8,6 +8,7 @@ import {
 import { ConversationRepository } from 'src/modules/conversation/infrastructure/conversation.repository';
 import { IConversationRepository } from 'src/modules/conversation/domain/i-conversation.repository';
 import { UserModule } from 'src/modules/user/interfaces/users.module';
+import { MarkConversationReadUseCase } from 'src/modules/conversation/application/use-cases/mark-conversation-read.usecase';
 import { FriendshipModule } from 'src/modules/friendship/interfaces/friendship.module';
 import { PageModule } from 'src/modules/message/interfaces/page.module';
 import { CreateConversationUseCase } from 'src/modules/conversation/application/use-cases/create-conversation.usecase';
@@ -51,6 +52,7 @@ import { StickerModule } from 'src/modules/sticker/sticker.module';
     GetPageListUseCase,
     AddReactionUseCase,
     RemoveReactionUseCase,
+    MarkConversationReadUseCase,
   ],
   exports: [IConversationRepository, CreateConversationUseCase],
 })

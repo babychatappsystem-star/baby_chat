@@ -165,6 +165,46 @@ export class PageRepository implements IPageRepository {
     );
   }
 
+  // 1 aggregation cho mọi hội thoại. Chỉ quét page có updatedAt > mốc đọc (updatedAt
+  // đổi mỗi lần push tin) và không đọc content — không cần giải mã.
+  async countUnreadByConversation(
+    userId: string,
+    since: Array<{ conversationId: string; since: Date }>,
+  ): Promise<Map<string, number>> {
+    const counts = new Map<string, number>();
+    if (since.length === 0) return counts;
+    const entries = since.map((s) => ({
+      conversationId: new mongoose.Types.ObjectId(s.conversationId),
+      since: s.since,
+    }));
+    const rows = await this.pageModel.aggregate<{
+      _id: mongoose.Types.ObjectId;
+      count: number;
+    }>([
+      {
+        $match: {
+          $or: entries.map((e) => ({
+            conversationId: e.conversationId,
+            updatedAt: { $gt: e.since },
+          })),
+        },
+      },
+      { $unwind: '$messages' },
+      {
+        $match: {
+          'messages.senderId': { $ne: new mongoose.Types.ObjectId(userId) },
+          $or: entries.map((e) => ({
+            conversationId: e.conversationId,
+            'messages.createdAt': { $gt: e.since },
+          })),
+        },
+      },
+      { $group: { _id: '$conversationId', count: { $sum: 1 } } },
+    ]);
+    for (const row of rows) counts.set(row._id.toString(), row.count);
+    return counts;
+  }
+
   async getLatestMessage(
     conversationId: string,
   ): Promise<MessageEntity | null> {

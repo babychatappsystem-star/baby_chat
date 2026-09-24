@@ -27,6 +27,12 @@ export abstract class IPageRepository {
     messageId: string,
     reactions: { userId: string; emoji: string }[],
   ): Promise<void>;
+  // Số tin người khác gửi sau mốc `since` của từng hội thoại. Hội thoại không có tin
+  // chưa đọc sẽ không có trong Map.
+  abstract countUnreadByConversation(
+    userId: string,
+    since: Array<{ conversationId: string; since: Date }>,
+  ): Promise<Map<string, number>>;
   abstract getLatestMessage(
     conversationId: string,
   ): Promise<MessageEntity | null>;

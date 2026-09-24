@@ -33,15 +33,42 @@ export class GetConversationsByUserUseCase {
     Array<{
       conversation: ConversationEntity;
       lastMessage: MessageEntity | null;
+      unreadCount: number;
     }>
   > {
     const convs = await this.conversationRepository.findByUserId(userId);
+
+    // Dữ liệu trước khi có tính năng chưa có mốc đọc → coi như đã đọc hết tới bây giờ.
+    const lastReadAt = new Map<string, Date>();
+    const needsInit: string[] = [];
+    for (const conv of convs) {
+      const at = conv.participants.find((p) => p.userId === userId)?.lastReadAt;
+      if (at) lastReadAt.set(conv.id!, at);
+      else needsInit.push(conv.id!);
+    }
+    await this.conversationRepository.initLastReadAt(
+      needsInit,
+      userId,
+      new Date(),
+    );
+    const unread = await this.pageRepository.countUnreadByConversation(
+      userId,
+      [...lastReadAt].map(([conversationId, since]) => ({
+        conversationId,
+        since,
+      })),
+    );
+
     const result = await Promise.all(
       convs.map(async (conv) => {
         const lastMessage = await this.pageRepository.getLatestMessage(
           conv.id!,
         );
-        return { conversation: conv, lastMessage };
+        return {
+          conversation: conv,
+          lastMessage,
+          unreadCount: unread.get(conv.id!) ?? 0,
+        };
       }),
     );
 

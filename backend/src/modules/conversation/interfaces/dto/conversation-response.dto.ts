@@ -127,6 +127,12 @@ export class ConversationResponseDto {
 
   @ApiPropertyOptional({ example: '2026-05-23T10:00:00.000Z' })
   lastMessageAt?: Date;
+
+  @ApiPropertyOptional({
+    example: 3,
+    description: 'Số tin người khác gửi mà user hiện tại chưa đọc',
+  })
+  unreadCount?: number;
 }
 
 // Một message trong conversation, trả về cho client.

@@ -9,6 +9,7 @@ import { DuplicatePageNumberError } from 'src/modules/message/domain/errors';
 import { PageDocument } from './page.schema';
 import { PageMapper } from './page.mapper';
 import { errorCode } from 'src/shared/utils/error-code';
+import { MessageCipher, messageAad } from 'src/shared/crypto/message-cipher';
 
 // Implementation của IPageRepository dùng Mongoose.
 // Page là bucket chứa tối đa pageSize tin nhắn — giảm số document trong DB.
@@ -17,12 +18,13 @@ export class PageRepository implements IPageRepository {
   constructor(
     @InjectModel(PageDocument.name)
     private readonly pageModel: Model<PageDocument>,
+    private readonly cipher: MessageCipher,
   ) {}
 
   // Lấy page theo id, null nếu không tồn tại.
   async findById(id: string): Promise<PageEntity | null> {
     const doc = await this.pageModel.findById(id);
-    return doc ? PageMapper.toDomain(doc) : null;
+    return doc ? PageMapper.toDomain(doc, this.cipher) : null;
   }
 
   // Lấy toàn bộ page của conversation theo pageNumber tăng dần — caller dựa vào
@@ -31,7 +33,7 @@ export class PageRepository implements IPageRepository {
     const docs = await this.pageModel
       .find({ conversationId: new mongoose.Types.ObjectId(conversationId) })
       .sort({ pageNumber: 1 });
-    return docs.map((doc) => PageMapper.toDomain(doc));
+    return docs.map((doc) => PageMapper.toDomain(doc, this.cipher));
   }
 
   // Lấy 1 page cụ thể của conversation theo số trang. Index unique đảm bảo có tối đa 1 kết quả.
@@ -43,17 +45,17 @@ export class PageRepository implements IPageRepository {
       conversationId: new mongoose.Types.ObjectId(conversationId),
       pageNumber,
     });
-    return doc ? PageMapper.toDomain(doc) : null;
+    return doc ? PageMapper.toDomain(doc, this.cipher) : null;
   }
 
   // Persist entity mới. Mongo tự sinh _id và _id cho từng message subdoc.
   // Bắt E11000 (duplicate key) khi 2 request đồng thời cùng cố tạo pageNumber giống nhau
   // → throw DuplicatePageNumberError để use case retry với pageNumber mới.
   async save(entity: PageEntity): Promise<PageEntity> {
-    const data = PageMapper.toPersistence(entity);
+    const data = PageMapper.toPersistence(entity, this.cipher);
     try {
       const created = await this.pageModel.create(data);
-      return PageMapper.toDomain(created);
+      return PageMapper.toDomain(created, this.cipher);
     } catch (err) {
       if (errorCode(err) === 11000) {
         throw new DuplicatePageNumberError(
@@ -81,13 +83,19 @@ export class PageRepository implements IPageRepository {
           messages: {
             _id: new mongoose.Types.ObjectId(message.id),
             senderId: new mongoose.Types.ObjectId(message.senderId),
-            content: message.content,
+            content: this.cipher.encryptField(
+              message.content,
+              messageAad(message.id, 'content'),
+            ),
             type: message.type,
             fileId: message.fileId,
             replyId: message.replyId
               ? new mongoose.Types.ObjectId(message.replyId)
               : null,
-            replySnippet: message.replySnippet,
+            replySnippet: this.cipher.encryptField(
+              message.replySnippet,
+              messageAad(message.id, 'replySnippet'),
+            ),
             replySenderId: message.replySenderId
               ? new mongoose.Types.ObjectId(message.replySenderId)
               : undefined,
@@ -104,7 +112,7 @@ export class PageRepository implements IPageRepository {
       { new: true },
     );
     if (!updated) throw new Error(`Page ${pageId} not found or already full`);
-    return PageMapper.toDomain(updated);
+    return PageMapper.toDomain(updated, this.cipher);
   }
 
   // Helper trả về mảng tin nhắn của 1 page; rỗng nếu page không tồn tại.
@@ -131,7 +139,7 @@ export class PageRepository implements IPageRepository {
       'messages._id': msgObjectId,
     });
     if (!doc) return null;
-    const page = PageMapper.toDomain(doc);
+    const page = PageMapper.toDomain(doc, this.cipher);
     return page.messages.find((m) => m.id === messageId) ?? null;
   }
 
@@ -167,7 +175,7 @@ export class PageRepository implements IPageRepository {
       .sort({ pageNumber: -1 });
 
     if (!doc || doc.messages.length === 0) return null;
-    const page = PageMapper.toDomain(doc);
+    const page = PageMapper.toDomain(doc, this.cipher);
     return page.messages[page.messages.length - 1];
   }
 }

@@ -5,6 +5,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { UserModule } from './modules/user/interfaces/users.module';
 import { ConversationsModule } from './modules/conversation/interfaces/conversations.module';
 import { AuthModule } from './modules/auth/interfaces/auth.module';
@@ -39,6 +40,8 @@ import { NotificationModule } from './modules/notification/notification.module';
       global: true,
     }),
     EventEmitterModule.forRoot(),
+    // Mặc định cho route có ThrottlerGuard; route nhạy cảm override bằng @Throttle.
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 10 }]),
     EventsModule,
     FileModule,
     UserModule,

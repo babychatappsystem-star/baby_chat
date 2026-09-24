@@ -58,6 +58,19 @@ export class ConversationNotFoundException extends HttpException {
   }
 }
 
+export class VerificationEmailCooldownException extends HttpException {
+  constructor(retryAfterSeconds: number) {
+    super(
+      {
+        error: 'VerificationEmailCooldown',
+        message: `Please wait ${retryAfterSeconds}s before requesting another verification email`,
+        statusCode: HttpStatus.TOO_MANY_REQUESTS,
+      },
+      HttpStatus.TOO_MANY_REQUESTS,
+    );
+  }
+}
+
 export class MessageNotFoundException extends HttpException {
   constructor(id?: string) {
     const message = id ? `Message '${id}' not found` : 'Message not found';

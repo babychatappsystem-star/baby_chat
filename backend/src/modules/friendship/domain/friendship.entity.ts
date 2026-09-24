@@ -1,3 +1,5 @@
+import { DomainError } from 'src/shared/exceptions/domain-error';
+
 export enum FriendshipStatus {
   Pending = 'pending',
   Accepted = 'accepted',
@@ -48,10 +50,10 @@ export class FriendshipEntity {
   // Tạo friend request mới (status pending). Chặn tự kết bạn với chính mình.
   static createRequest(props: CreateFriendshipProps): FriendshipEntity {
     if (!props.requesterId || !props.recipientId) {
-      throw new Error('requesterId and recipientId are required');
+      throw new DomainError('requesterId and recipientId are required');
     }
     if (props.requesterId === props.recipientId) {
-      throw new Error('Cannot send a friend request to yourself');
+      throw new DomainError('Cannot send a friend request to yourself');
     }
     return new FriendshipEntity({
       requesterId: props.requesterId,
@@ -63,7 +65,7 @@ export class FriendshipEntity {
   // Tạo block trực tiếp giữa 2 user. requesterId = người chặn.
   static createBlock(props: CreateFriendshipProps): FriendshipEntity {
     if (props.requesterId === props.recipientId) {
-      throw new Error('Cannot block yourself');
+      throw new DomainError('Cannot block yourself');
     }
     return new FriendshipEntity({
       requesterId: props.requesterId,
@@ -87,10 +89,10 @@ export class FriendshipEntity {
   // Chỉ recipient mới được accept; chỉ pending mới chuyển sang accepted.
   accept(byUserId: string): void {
     if (this._status !== FriendshipStatus.Pending) {
-      throw new Error(`Cannot accept friendship in status '${this._status}'`);
+      throw new DomainError(`Cannot accept friendship in status '${this._status}'`);
     }
     if (byUserId !== this.recipientId) {
-      throw new Error('Only the recipient can accept this request');
+      throw new DomainError('Only the recipient can accept this request');
     }
     this._status = FriendshipStatus.Accepted;
     this._acceptedAt = new Date();
@@ -99,7 +101,7 @@ export class FriendshipEntity {
   // Chuyển sang blocked bởi userId (phải là 1 trong 2 bên).
   blockBy(userId: string): void {
     if (userId !== this.requesterId && userId !== this.recipientId) {
-      throw new Error('Only a participant of the friendship can block');
+      throw new DomainError('Only a participant of the friendship can block');
     }
     this._status = FriendshipStatus.Blocked;
   }
@@ -113,6 +115,6 @@ export class FriendshipEntity {
   otherUserId(userId: string): string {
     if (userId === this.requesterId) return this.recipientId;
     if (userId === this.recipientId) return this.requesterId;
-    throw new Error('User is not part of this friendship');
+    throw new DomainError('User is not part of this friendship');
   }
 }

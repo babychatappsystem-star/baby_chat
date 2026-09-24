@@ -58,6 +58,13 @@ export class ConversationNotFoundException extends HttpException {
   }
 }
 
+export class MessageNotFoundException extends HttpException {
+  constructor(id?: string) {
+    const message = id ? `Message '${id}' not found` : 'Message not found';
+    super({ error: 'MessageNotFound', message, statusCode: HttpStatus.NOT_FOUND }, HttpStatus.NOT_FOUND);
+  }
+}
+
 export class NotParticipantException extends HttpException {
   constructor(userId: string) {
     super(

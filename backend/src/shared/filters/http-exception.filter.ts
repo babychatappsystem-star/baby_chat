@@ -7,8 +7,10 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { MongoError } from 'mongodb';
+import { BSON, MongoError } from 'mongodb';
+import mongoose from 'mongoose';
 import { MulterError } from 'multer';
+import { DomainError } from 'src/shared/exceptions/domain-error';
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
@@ -48,23 +50,30 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       status = multerError.status;
       message = multerError.message;
       error = multerError.error;
-    } else if (exception instanceof Error) {
-      // Handle generic errors
-      status = HttpStatus.INTERNAL_SERVER_ERROR;
-      message = exception.message || 'Internal server error';
-      error = 'InternalServerError';
+    } else if (exception instanceof DomainError) {
+      status = HttpStatus.BAD_REQUEST;
+      message = exception.message;
+      error = 'DomainRuleViolation';
+    } else if (this.isInvalidIdError(exception)) {
+      // Id sai định dạng ObjectId: Mongoose CastError (query) hoặc BSONError (new ObjectId()).
+      status = HttpStatus.BAD_REQUEST;
+      message = 'Invalid id';
+      error = 'InvalidId';
     } else {
-      // Handle unknown errors
+      // Lỗi hệ thống: không trả chi tiết nội bộ cho client, chỉ ghi log.
       status = HttpStatus.INTERNAL_SERVER_ERROR;
-      message = 'Something went wrong';
-      error = 'UnknownError';
+      message = 'Internal server error';
+      error = 'InternalServerError';
     }
 
-    // Log the error
-    this.logger.error(
-      `${request.method} ${request.url} ${message}`,
-      // exception instanceof Error ? exception.stack : exception,
-    );
+    if (status >= 500) {
+      this.logger.error(
+        `${request.method} ${request.url}`,
+        exception instanceof Error ? exception.stack : String(exception),
+      );
+    } else {
+      this.logger.warn(`${request.method} ${request.url} ${status} ${JSON.stringify(message)}`);
+    }
 
     // Send error response
     const errorResponse = {
@@ -77,6 +86,11 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     };
 
     response.status(status).json(errorResponse);
+  }
+
+  private isInvalidIdError(exception: unknown): boolean {
+    if (exception instanceof mongoose.Error.CastError) return exception.kind === 'ObjectId';
+    return BSON.BSONError.isBSONError(exception);
   }
 
   private handleMulterError(

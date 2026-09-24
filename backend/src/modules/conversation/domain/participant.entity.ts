@@ -1,3 +1,4 @@
+import { DomainError } from 'src/shared/exceptions/domain-error';
 export type ParticipantRole = 'admin' | 'member' | 'moderator';
 
 export interface CreateParticipantProps {
@@ -40,7 +41,7 @@ export class ParticipantEntity {
   rename(newUsername: string): void {
     const trimmed = newUsername.trim();
     if (trimmed.length === 0) {
-      throw new Error('Username cannot be empty');
+      throw new DomainError('Username cannot be empty');
     }
     this._username = trimmed;
   }
@@ -49,10 +50,10 @@ export class ParticipantEntity {
   static create(props: CreateParticipantProps): ParticipantEntity {
     const validRoles: ParticipantRole[] = ['admin', 'member', 'moderator'];
     if (!validRoles.includes(props.role)) {
-      throw new Error(`Invalid role: ${props.role}. Must be one of ${validRoles.join(', ')}`);
+      throw new DomainError(`Invalid role: ${props.role}. Must be one of ${validRoles.join(', ')}`);
     }
     if (!props.username || props.username.trim().length === 0) {
-      throw new Error('Username is required');
+      throw new DomainError('Username is required');
     }
     return new ParticipantEntity({
       userId: props.userId,

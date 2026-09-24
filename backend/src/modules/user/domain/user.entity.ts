@@ -1,3 +1,4 @@
+import { DomainError } from 'src/shared/exceptions/domain-error';
 export interface CreateUserProps {
   username: string;
   email: string;
@@ -67,13 +68,13 @@ export class UserEntity {
   // Email được normalize lowercase + trim.
   static create(props: CreateUserProps): UserEntity {
     if (!props.username || props.username.trim().length === 0) {
-      throw new Error('Username is required');
+      throw new DomainError('Username is required');
     }
     if (!props.email || props.email.trim().length === 0) {
-      throw new Error('Email is required');
+      throw new DomainError('Email is required');
     }
     if (!props.password) {
-      throw new Error('Password is required');
+      throw new DomainError('Password is required');
     }
 
     return new UserEntity({

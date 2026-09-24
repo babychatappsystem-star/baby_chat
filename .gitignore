@@ -20,3 +20,7 @@ node_modules/
 # Build
 dist/
 build/
+
+# Claude Code: cấu hình cá nhân và worktree tạm của agent
+**/.claude/settings.local.json
+**/.claude/worktrees/

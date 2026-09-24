@@ -1,8 +1,12 @@
 import { generateObjectIdHex } from 'src/shared/utils/id-generator';
 import { InvalidMessageException } from 'src/shared/exceptions/sticker-exceptions';
+import { DomainError } from 'src/shared/exceptions/domain-error';
 
 // Độ dài snippet lưu kèm để render reply UI. Cắt ngắn nhưng đủ để user nhận ra context.
 export const REPLY_SNIPPET_MAX_LENGTH = 80;
+
+// Mỗi page chứa tới 100 tin trong 1 document — giới hạn này giữ page xa ngưỡng 16MB của MongoDB.
+export const MESSAGE_CONTENT_MAX_LENGTH = 4000;
 
 export type MessageType = 'text' | 'image' | 'sticker';
 
@@ -71,13 +75,16 @@ export class MessageEntity {
   // method riêng (vd MessageEntity.edit()) set updatedAt = new Date() và đánh dấu isEdited.
   static create(props: CreateMessageProps): MessageEntity {
     if (!props.senderId) {
-      throw new Error('Sender ID is required');
+      throw new DomainError('Sender ID is required');
     }
 
     // Defense-in-depth (lỗ hổng #2): chặn content non-string trước khi gọi .trim().
     // Cho phép undefined/null (image caption optional); mọi kiểu khác string là lỗi.
     if (props.content !== undefined && props.content !== null && typeof props.content !== 'string') {
-      throw new Error('Message content must be a string');
+      throw new DomainError('Message content must be a string');
+    }
+    if (props.content && props.content.length > MESSAGE_CONTENT_MAX_LENGTH) {
+      throw new InvalidMessageException(`Message content cannot exceed ${MESSAGE_CONTENT_MAX_LENGTH} characters`);
     }
 
     const type: MessageType = props.type ?? 'text';

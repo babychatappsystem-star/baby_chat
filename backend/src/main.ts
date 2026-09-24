@@ -9,6 +9,9 @@ import * as morgan from 'morgan'
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  // Render (và đa số PaaS) đứng trước app 1 proxy: tin 1 hop để req.ip là IP thật của
+  // client — nếu không, rate limit gom mọi người dùng vào chung IP của proxy.
+  app.set('trust proxy', 1);
   // whitelist: strip field không khai báo trong DTO ở mọi endpoint (defense-in-depth).
   // Không dùng forbidNonWhitelisted (tránh 400 phá client hiện có) — chỉ silent-strip.
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));

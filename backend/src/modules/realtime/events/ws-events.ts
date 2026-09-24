@@ -11,6 +11,15 @@ export const WS_EVENTS = {
   PRESENCE_OFFLINE: 'presence.offline',
 } as const;
 
+// Client → server: tab hiện tại có đang hiển thị và được focus không.
+export const WS_CLIENT_EVENTS = {
+  CLIENT_FOCUS: 'client.focus',
+} as const;
+
+export interface ClientFocusPayload {
+  focused: boolean;
+}
+
 export type WsEventName = (typeof WS_EVENTS)[keyof typeof WS_EVENTS];
 
 // Tin nhắn mới trong conversation. Emit cho MỌI participant, KỂ CẢ sender

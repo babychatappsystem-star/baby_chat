@@ -1,10 +1,13 @@
 import { Inject, Logger, OnModuleInit } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import {
+  ConnectedSocket,
+  MessageBody,
   OnGatewayConnection,
   OnGatewayDisconnect,
   OnGatewayInit,
   WebSocketGateway,
+  SubscribeMessage,
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
@@ -20,8 +23,10 @@ import {
   FriendshipRequestReceivedPayload,
   MessageNewPayload,
   ReactionUpdatedPayload,
+  WS_CLIENT_EVENTS,
   WS_EVENTS,
 } from '../events/ws-events';
+import type { ClientFocusPayload } from '../events/ws-events';
 
 // Helper sinh tên room nhất quán giữa gateway và bridge.
 export const userRoom = (userId: string) => `user:${userId}`;
@@ -99,6 +104,7 @@ export class ChatGateway
     if (!user) return;
 
     // Presence: ghi nhận ngắt kết nối, broadcast nếu vừa offline
+    this.presenceService.setSocketFocus(user.userId, socket.id, false);
     const isLastConnection = this.presenceService.userLeft(user.userId);
     if (isLastConnection) {
       // Ghi lastSeenAt vào DB (fire-and-forget; không block disconnect)
@@ -110,6 +116,13 @@ export class ChatGateway
         this.logger.error(`Failed to broadcast presence.offline for ${user.userId}`, err),
       );
     }
+  }
+
+  @SubscribeMessage(WS_CLIENT_EVENTS.CLIENT_FOCUS)
+  handleClientFocus(@ConnectedSocket() socket: Socket, @MessageBody() payload: ClientFocusPayload): void {
+    const user = (socket.data as SocketDataShape).user;
+    if (!user) return;
+    this.presenceService.setSocketFocus(user.userId, socket.id, payload?.focused === true);
   }
 
   // ─── Presence Broadcast helpers ─────────────────────────────────────────────
@@ -172,6 +185,11 @@ export class ChatGateway
       }
       this.server.to(userRoom(uid)).emit(WS_EVENTS.CONVERSATION_CREATED, payload);
     }
+  }
+
+  // Hội thoại đã xoá: đưa mọi socket ra khỏi room để không còn nhận event của nó.
+  removeConversationRoom(conversationId: string): void {
+    this.server.in(convRoom(conversationId)).socketsLeave(convRoom(conversationId));
   }
 
   emitReactionUpdated(conversationId: string, payload: ReactionUpdatedPayload): void {

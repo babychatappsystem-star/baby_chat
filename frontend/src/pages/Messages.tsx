@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
 import { Phone, Video, MoreVertical, Smile, Paperclip, MessageCircle, Reply, X, Sticker, Bell, BellOff } from 'lucide-react';
 import { Input, Button, Badge, Avatar, Tooltip, Typography, Space, Spin, Popover, message as antdMessage } from 'antd';
 import EmojiPicker, { Theme, type EmojiClickData } from 'emoji-picker-react';
@@ -137,6 +137,9 @@ const EmptyChatState: React.FC<{ name: string; onSend: () => void }> = ({ name, 
   );
 };
 
+// Tin tối thiểu khi mở hội thoại; ít hơn thì tải thêm page trước để khung chat không trống.
+const MIN_INITIAL_MESSAGES = 30;
+
 const MessagesPage: React.FC = () => {
   const token = useThemeToken();
   const isDark = useDarkMode();
@@ -265,13 +268,72 @@ const MessagesPage: React.FC = () => {
     }
   }, [currentUserId]);
 
+  // Phân trang ngược: mở hội thoại tải page mới nhất (+ page trước nếu quá ít tin),
+  // cuộn lên đầu thì tải thêm page cũ hơn.
+  const selectedConvIdRef = useRef<string | undefined>(undefined);
+  selectedConvIdRef.current = selectedConversation?.id;
+  const oldestPageRef = useRef(1);
+  const loadingOlderRef = useRef(false);
+  const scrollRestoreRef = useRef<{ height: number; top: number } | null>(null);
+  const [hasOlderMessages, setHasOlderMessages] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+
   const loadMessages = useCallback(
     async (conversationId: string) => {
-      const dtos = await conversationService.getLatestMessages(conversationId);
+      const pages = await conversationService.getPages(conversationId);
+      let pageNumber = pages.reduce((max, p) => Math.max(max, p.pageNumber), 0);
+      let dtos: MessageDTO[] = [];
+      if (pageNumber > 0) {
+        dtos = await conversationService.getMessagesByPage(conversationId, pageNumber);
+        if (dtos.length < MIN_INITIAL_MESSAGES && pageNumber > 1) {
+          pageNumber -= 1;
+          const older = await conversationService.getMessagesByPage(conversationId, pageNumber);
+          dtos = [...older, ...dtos];
+        }
+      }
+      if (selectedConvIdRef.current !== conversationId) return;
+      oldestPageRef.current = Math.max(pageNumber, 1);
+      setHasOlderMessages(pageNumber > 1);
       setMessages(dtos.map((msg) => mapMessage(msg, currentUserId)));
     },
     [currentUserId]
   );
+
+  const loadOlderMessages = useCallback(async () => {
+    const conversationId = selectedConvIdRef.current;
+    if (!conversationId || loadingOlderRef.current || oldestPageRef.current <= 1) return;
+    loadingOlderRef.current = true;
+    setLoadingOlder(true);
+    try {
+      const pageNumber = oldestPageRef.current - 1;
+      const dtos = await conversationService.getMessagesByPage(conversationId, pageNumber);
+      if (selectedConvIdRef.current !== conversationId) return;
+      const el = scrollContainerRef.current;
+      if (el) scrollRestoreRef.current = { height: el.scrollHeight, top: el.scrollTop };
+      oldestPageRef.current = pageNumber;
+      setHasOlderMessages(pageNumber > 1);
+      setMessages((prev) => [...dtos.map((msg) => mapMessage(msg, currentUserId)), ...prev]);
+    } catch (err) {
+      console.error('Failed to load older messages', err);
+      antdMessage.error('Failed to load older messages');
+    } finally {
+      loadingOlderRef.current = false;
+      setLoadingOlder(false);
+    }
+  }, [currentUserId]);
+
+  // Giữ nguyên vị trí đang đọc sau khi chèn tin cũ lên đầu danh sách.
+  useLayoutEffect(() => {
+    const restore = scrollRestoreRef.current;
+    const el = scrollContainerRef.current;
+    if (!restore || !el) return;
+    scrollRestoreRef.current = null;
+    el.scrollTop = el.scrollHeight - restore.height + restore.top;
+  }, [messages]);
+
+  const handleMessagesScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (hasOlderMessages && e.currentTarget.scrollTop < 80) loadOlderMessages();
+  };
 
   useEffect(() => {
     loadConversations().catch(console.error);
@@ -289,7 +351,8 @@ const MessagesPage: React.FC = () => {
   }, [selectedConversation?.id]);
 
   useEffect(() => {
-    if (messages.length === 0) return;
+    // Chờ spinner biến mất: lúc đang loading, danh sách chưa render nên cuộn không có tác dụng.
+    if (messages.length === 0 || loadingMessages) return;
 
     const lastMessage = messages[messages.length - 1];
     const lastMessageId = lastMessage.id;
@@ -309,10 +372,13 @@ const MessagesPage: React.FC = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }
     }
-  }, [messages, isNearBottom]);
+  }, [messages, isNearBottom, loadingMessages]);
 
+  // Phụ thuộc vào id, không phải object: reload danh sách hội thoại (vd khi socket
+  // reconnect) tạo object mới cùng id — không được tải lại tin và mất vị trí cuộn.
+  const selectedConversationId = selectedConversation?.id;
   useEffect(() => {
-    const conversationId = selectedConversation?.id;
+    const conversationId = selectedConversationId;
     if (!conversationId) { setMessages([]); return; }
     let cancelled = false;
     setLoadingMessages(true);
@@ -320,7 +386,7 @@ const MessagesPage: React.FC = () => {
       .catch((err) => { if (!cancelled) { console.error(err); setMessages([]); } })
       .finally(() => { if (!cancelled) setLoadingMessages(false); });
     return () => { cancelled = true; };
-  }, [selectedConversation, loadMessages]);
+  }, [selectedConversationId, loadMessages]);
 
   useSocketConnect(() => {
     loadConversations().catch(console.error);
@@ -710,7 +776,18 @@ const MessagesPage: React.FC = () => {
         </div>
 
         {/* Messages Area */}
-        <div ref={scrollContainerRef} className="chat-scroll" style={{ flex: 1, padding: '20px 24px', overflowY: 'auto' }}>
+        <div
+          ref={scrollContainerRef}
+          className="chat-scroll"
+          onScroll={handleMessagesScroll}
+          style={{ flex: 1, padding: '20px 24px', overflowY: 'auto' }}
+        >
+          {/* height 0 + sticky: spinner không làm đổi scrollHeight → không lệch vị trí khi chèn tin cũ */}
+          {loadingOlder && (
+            <div style={{ position: 'sticky', top: 0, height: 0, display: 'flex', justifyContent: 'center', zIndex: 1 }}>
+              <Spin size="small" />
+            </div>
+          )}
           {loadingMessages ? (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
               <Spin size="large" />

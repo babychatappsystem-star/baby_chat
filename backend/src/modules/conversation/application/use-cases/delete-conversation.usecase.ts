@@ -5,6 +5,8 @@ import {
   NotConversationAdminException,
   NotParticipantException,
 } from 'src/shared/exceptions/domain-exceptions';
+import { IEventBus, EVENT_BUS } from 'src/shared/events/event-bus';
+import { ConversationDeletedEvent } from 'src/modules/conversation/domain/conversation-deleted.event';
 
 export interface DeleteConversationCommand {
   conversationId: string;
@@ -21,6 +23,7 @@ export class DeleteConversationUseCase {
   constructor(
     @Inject(IConversationRepository)
     private readonly conversationRepository: IConversationRepository,
+    @Inject(EVENT_BUS) private readonly eventBus: IEventBus,
   ) {}
 
   async execute(cmd: DeleteConversationCommand): Promise<void> {
@@ -40,5 +43,6 @@ export class DeleteConversationUseCase {
     }
 
     await this.conversationRepository.softDelete(cmd.conversationId);
+    this.eventBus.publish(new ConversationDeletedEvent(cmd.conversationId));
   }
 }

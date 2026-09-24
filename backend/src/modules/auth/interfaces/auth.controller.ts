@@ -1,6 +1,7 @@
 import { Body, Controller, HttpCode, HttpStatus, Post, Get, UseGuards, Request } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from "@nestjs/swagger";
 import { JwtService } from "@nestjs/jwt";
+import { SkipThrottle, Throttle, ThrottlerGuard } from "@nestjs/throttler";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { CurrentUser } from "src/shared/decorators/current-user.decorator";
 import { SendVerificationLinkDto, VerifyRegistrationDto, LoginDto } from "./dto/auth.dto";
@@ -17,6 +18,7 @@ import { TokenBlacklistService } from "../infrastructure/token-blacklist.service
 
 // Controller xử lý đăng ký/đăng nhập/đăng xuất. Chỉ orchestrate — gọi use case.
 @ApiTags('auth')
+@UseGuards(ThrottlerGuard)
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -33,6 +35,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Gửi link đăng ký (xác thực email)' })
   @ApiResponse({ status: 201, description: 'Đã gửi link xác nhận' })
   // POST /auth/register — tạo token, gửi qua email
+  @Throttle({ default: { limit: 5, ttl: 15 * 60_000 } })
   @Post('register')
   async register(@Body() dto: SendVerificationLinkDto): Promise<{ message: string }> {
     await this.sendVerificationLinkUseCase.execute({
@@ -44,6 +47,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Xác thực token và tạo tài khoản' })
   @ApiResponse({ status: 201, description: 'Tạo tài khoản thành công', type: AuthResponseDto })
   // POST /auth/verify-registration — verify token + hash pwd + trả về JWT
+  @Throttle({ default: { limit: 10, ttl: 15 * 60_000 } })
   @Post('verify-registration')
   async verifyRegistration(@Body() dto: VerifyRegistrationDto): Promise<AuthResponseDto> {
     const result = await this.verifyAndCreateUserUseCase.execute({
@@ -60,6 +64,7 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Sai email hoặc mật khẩu' })
   @HttpCode(HttpStatus.OK)
   // POST /auth/login — đăng nhập bằng email + password, trả JWT.
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('login')
   async login(@Body() dto: LoginDto): Promise<AuthResponseDto> {
     const result = await this.loginUserUseCase.execute({ email: dto.email, password: dto.password });
@@ -71,6 +76,7 @@ export class AuthController {
   @ApiResponse({ status: 200, type: ProfileResponseDto })
   @UseGuards(JwtAuthGuard)
   // GET /auth/profile — query user từ DB (để có avatar/thumbnail). roles lấy từ JWT payload.
+  @SkipThrottle()
   @Get('profile')
   async getProfile(
     @CurrentUser('userId') userId: string,
@@ -86,6 +92,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   // POST /auth/refresh — verify + rotate refresh token. Trả về cặp token mới;
   // refresh token cũ bị revoke sau call này.
+  @SkipThrottle()
   @Post('refresh')
   async refresh(@Body() dto: RefreshTokenDto): Promise<AuthResponseDto> {
     const result = await this.refreshTokensUseCase.execute({ refreshToken: dto.refresh_token });
@@ -98,6 +105,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   // POST /auth/logout — blacklist access token + revoke refresh token (nếu có trong body).
+  @SkipThrottle()
   @Post('logout')
   async logout(@Request() req, @Body() dto: RefreshTokenDto): Promise<LogoutResponseDto> {
     const authHeader = req.headers?.authorization as string | undefined;

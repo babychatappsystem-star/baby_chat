@@ -1,4 +1,5 @@
 import { ParticipantEntity, ParticipantRole } from './participant.entity';
+import { DomainError } from 'src/shared/exceptions/domain-error';
 
 export type ConversationType = 'direct' | 'group' | 'channel';
 
@@ -110,11 +111,11 @@ export class ConversationEntity {
   static create(props: CreateConversationProps): ConversationEntity {
     const validTypes: ConversationType[] = ['direct', 'group', 'channel'];
     if (!validTypes.includes(props.type)) {
-      throw new Error(`Invalid conversation type: ${props.type}`);
+      throw new DomainError(`Invalid conversation type: ${props.type}`);
     }
 
     if (props.type !== 'direct' && !props.name) {
-      throw new Error('Name is required for group and channel conversations');
+      throw new DomainError('Name is required for group and channel conversations');
     }
 
     // Creator is always admin; dedupe nếu creator có trong participantUserIds
@@ -124,18 +125,18 @@ export class ConversationEntity {
 
     // direct phải có đúng 2 người. Group/channel giới hạn MAX_PARTICIPANTS.
     if (props.type === 'direct' && otherUserIds.length !== 1) {
-      throw new Error('Direct conversation must have exactly 2 participants');
+      throw new DomainError('Direct conversation must have exactly 2 participants');
     }
     const totalParticipants = otherUserIds.length + 1; // +1 cho creator
     if (totalParticipants > MAX_PARTICIPANTS) {
-      throw new Error(
+      throw new DomainError(
         `Conversation cannot have more than ${MAX_PARTICIPANTS} participants (got ${totalParticipants})`,
       );
     }
 
     const usernameFor = (uid: string): string => {
       const name = props.usernames.get(uid);
-      if (!name) throw new Error(`Missing username for participant ${uid}`);
+      if (!name) throw new DomainError(`Missing username for participant ${uid}`);
       return name;
     };
 

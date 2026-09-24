@@ -9,6 +9,8 @@ import { PresenceEntry, PresenceStatus } from './presence.types';
 export class PresenceService {
   private readonly logger = new Logger(PresenceService.name);
   private readonly presence = new Map<string, PresenceEntry>();
+  // userId → các socketId mà tab đang hiển thị + được focus (client tự báo qua client.focus).
+  private readonly focusedSockets = new Map<string, Set<string>>();
 
   // Ghi nhận kết nối mới. Trả true nếu đây là kết nối ĐẦU TIÊN của user (vừa online).
   userJoined(userId: string): boolean {
@@ -49,6 +51,19 @@ export class PresenceService {
       return { online: true, lastSeenAt: undefined };
     }
     return { online: false, lastSeenAt: undefined }; // lastSeenAt lấy từ DB
+  }
+
+  setSocketFocus(userId: string, socketId: string, focused: boolean): void {
+    const sockets = this.focusedSockets.get(userId) ?? new Set<string>();
+    if (focused) sockets.add(socketId);
+    else sockets.delete(socketId);
+    if (sockets.size > 0) this.focusedSockets.set(userId, sockets);
+    else this.focusedSockets.delete(userId);
+  }
+
+  // User đang nhìn app ở ít nhất 1 tab → không cần push (tin đã hiện realtime).
+  isFocused(userId: string): boolean {
+    return this.focusedSockets.has(userId);
   }
 
   // Kiểm tra xem user có đang online không (không tính hidePresence — gọi getStatus nếu cần).

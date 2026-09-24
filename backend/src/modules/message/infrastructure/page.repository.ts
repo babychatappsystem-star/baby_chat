@@ -21,11 +21,12 @@ export class PageRepository implements IPageRepository {
     return doc ? PageMapper.toDomain(doc) : null;
   }
 
-  // Lấy toàn bộ page của conversation, dùng index conversationId.
+  // Lấy toàn bộ page của conversation theo pageNumber tăng dần — caller dựa vào
+  // phần tử cuối là page mới nhất.
   async findByConversationId(conversationId: string): Promise<PageEntity[]> {
-    const docs = await this.pageModel.find({
-      conversationId: new mongoose.Types.ObjectId(conversationId),
-    });
+    const docs = await this.pageModel
+      .find({ conversationId: new mongoose.Types.ObjectId(conversationId) })
+      .sort({ pageNumber: 1 });
     return docs.map((doc) => PageMapper.toDomain(doc));
   }
 

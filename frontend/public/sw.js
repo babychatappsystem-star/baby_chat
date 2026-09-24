@@ -3,22 +3,12 @@ self.addEventListener('push', (event) => {
   
   try {
     const data = event.data.json();
-    
+
+    // Luôn hiện notification: với userVisibleOnly, bỏ qua sẽ khiến Chrome tự hiện
+    // "This site has been updated in the background". Server đã không push cho user
+    // đang focus app (client.focus qua socket).
     event.waitUntil(
-      clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-        let isFocused = false;
-        for (let i = 0; i < windowClients.length; i++) {
-          if (windowClients[i].visibilityState === 'visible' && windowClients[i].focused) {
-            isFocused = true;
-            break;
-          }
-        }
-
-        if (isFocused) {
-          // App is currently open and focused by the user, skip notification
-          return Promise.resolve();
-        }
-
+      Promise.resolve().then(() => {
         return self.registration.getNotifications().then((notifications) => {
           let currentNotification;
           let messageCount = 1;
@@ -50,8 +40,8 @@ self.addEventListener('push', (event) => {
 
           return self.registration.showNotification(title, {
             body: body,
-            icon: '/favicon.ico',
-            badge: '/favicon.ico', // Optional badge
+            icon: '/icon-192.png',
+            badge: '/icon-192.png',
             tag: 'chat-messages',
             data: {
               url: data.url,

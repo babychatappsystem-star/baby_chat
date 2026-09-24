@@ -53,8 +53,10 @@ export class NotificationService implements OnModuleInit {
         const participantId = participant.userId;
         // Skip sending push to the sender
         if (participantId === event.senderId) continue;
+        // Đang mở app ở tab được focus → tin đã hiện realtime, không push.
+        if (this.presenceService.isFocused(participantId)) continue;
 
-        // User is offline, find their push subscriptions
+        // Tìm push subscriptions của user
         const user = await this.userRepository.findById(participantId);
         if (!user || !user.pushSubscriptions || user.pushSubscriptions.length === 0) continue;
 

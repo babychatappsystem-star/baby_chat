@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
@@ -59,7 +59,7 @@ export class MailService {
       this.logger.log(`Verification email sent to ${email} via Brevo API`);
     } catch (error) {
       this.logger.error(`Failed to send email to ${email}`, error);
-      throw new Error('Không thể gửi email xác nhận. Vui lòng thử lại.');
+      throw new ServiceUnavailableException('Không thể gửi email xác nhận. Vui lòng thử lại.');
     }
   }
 }

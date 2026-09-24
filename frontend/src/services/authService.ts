@@ -1,6 +1,4 @@
-import axios from 'axios';
 import apiClient from '../api/apiClient';
-import environmentLoader from '../config/environmentLoader';
 import type { AuthResponse, ProfileDTO, VerifyRegistrationPayload } from '../types/api.types';
 
 export interface LoginPayload {
@@ -70,26 +68,6 @@ export const authService = {
 
   getRefreshToken(): string | null {
     return localStorage.getItem(SESSION_KEYS.refresh_token);
-  },
-
-  // Refresh access token độc lập (dùng axios trực tiếp, không qua apiClient
-  // để tránh vòng lặp interceptor). Trả token mới hoặc null nếu thất bại.
-  async refreshAccessToken(): Promise<string | null> {
-    const refreshToken = localStorage.getItem(SESSION_KEYS.refresh_token);
-    if (!refreshToken) return null;
-    try {
-      const { apiUrl } = environmentLoader.loadConfig();
-      const { data } = await axios.post<AuthResponse>(`${apiUrl}/auth/refresh`, {
-        refresh_token: refreshToken,
-      });
-      localStorage.setItem(SESSION_KEYS.access_token,             data.access_token);
-      localStorage.setItem(SESSION_KEYS.refresh_token,            data.refresh_token);
-      localStorage.setItem(SESSION_KEYS.access_token_expires_at,  data.access_token_expires_at);
-      localStorage.setItem(SESSION_KEYS.refresh_token_expires_at, data.refresh_token_expires_at);
-      return data.access_token;
-    } catch {
-      return null;
-    }
   },
 
   // Returns true if access token is missing or expires within the next 30s

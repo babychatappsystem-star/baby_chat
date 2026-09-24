@@ -3,6 +3,7 @@ import { IConversationRepository } from 'src/modules/conversation/domain/i-conve
 import { IPageRepository, PAGE_REPOSITORY } from 'src/modules/message/domain/i-page.repository';
 import {
   ConversationNotFoundException,
+  MessageNotFoundException,
   NotParticipantException,
 } from 'src/shared/exceptions/domain-exceptions';
 import { IEventBus, EVENT_BUS } from 'src/shared/events/event-bus';
@@ -36,7 +37,7 @@ export class RemoveReactionUseCase {
       command.messageId,
     );
     if (!message) {
-      throw new Error('Message not found');
+      throw new MessageNotFoundException(command.messageId);
     }
 
     const removed = message.removeReaction(command.userId, command.emoji);

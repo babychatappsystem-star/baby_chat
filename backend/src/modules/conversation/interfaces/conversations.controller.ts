@@ -21,6 +21,7 @@ import { CreateConvDto } from './dto/create-conv.dto';
 import { CreateMessageDto } from 'src/modules/message/interfaces/dto/create-message.dto';
 import { UpdateMyParticipantUsernameDto } from './dto/update-participant-username.dto';
 import { UpdateConversationAvatarDto } from './dto/update-conversation-avatar.dto';
+import { ReactionDto } from './dto/reaction.dto';
 import {
   ConversationResponseDto,
   MessageResponseDto,
@@ -266,7 +267,7 @@ export class ConversationsController {
     @Param('conversationId') conversationId: string,
     @Param('messageId') messageId: string,
     @CurrentUser('userId') userId: string,
-    @Body() body: { emoji: string },
+    @Body() body: ReactionDto,
   ): Promise<void> {
     await this.addReactionUseCase.execute({
       conversationId,
@@ -284,7 +285,7 @@ export class ConversationsController {
     @Param('conversationId') conversationId: string,
     @Param('messageId') messageId: string,
     @CurrentUser('userId') userId: string,
-    @Body() body: { emoji: string },
+    @Body() body: ReactionDto,
   ): Promise<void> {
     await this.removeReactionUseCase.execute({
       conversationId,

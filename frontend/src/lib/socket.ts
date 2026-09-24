@@ -1,6 +1,6 @@
 import { io, Socket } from 'socket.io-client';
 import environmentLoader from '../config/environmentLoader';
-import { authService } from '../services/authService';
+import { refreshAccessToken } from '../api/apiClient';
 import type { ServerToClientEvents, ClientToServerEvents } from './wsEvents';
 
 export type AppSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
@@ -33,7 +33,7 @@ export function connectSocket(accessToken: string): AppSocket {
       err.message === 'Token has been revoked' || err.message === 'Unauthorized';
     if (!needsRefresh) return;
 
-    const newToken = await authService.refreshAccessToken();
+    const newToken = await refreshAccessToken().catch(() => null);
     if (!newToken) {
       socket?.disconnect();
       window.location.href = '/login';

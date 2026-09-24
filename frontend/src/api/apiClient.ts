@@ -15,16 +15,6 @@ const apiClient: AxiosInstance = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// --- Token refresh state ---
-let isRefreshing = false;
-type QueueItem = { resolve: (token: string) => void; reject: (err: unknown) => void };
-let queue: QueueItem[] = [];
-
-const flushQueue = (token: string | null, error: unknown = null): void => {
-  queue.forEach((item) => (token ? item.resolve(token) : item.reject(error)));
-  queue = [];
-};
-
 const persistTokens = (data: AuthResponse): void => {
   localStorage.setItem('access_token',             data.access_token);
   localStorage.setItem('refresh_token',            data.refresh_token);
@@ -45,58 +35,47 @@ const PUBLIC_PATHS = ['/auth/login', '/auth/register', '/auth/refresh'];
 const isPublicPath = (url?: string): boolean =>
   !!url && PUBLIC_PATHS.some((p) => url.includes(p));
 
-const doRefresh = async (): Promise<string> => {
-  const refreshToken = localStorage.getItem('refresh_token');
-  if (!refreshToken) throw new Error('No refresh token');
+// Single-flight: refresh token bị rotate sau mỗi lần dùng, nên mọi nơi (interceptor,
+// socket) phải chờ chung 1 request — 2 request song song thì request sau luôn thất bại.
+let refreshInFlight: Promise<string> | null = null;
 
-  const { data } = await axios.post<AuthResponse>(
-    `${env.apiUrl}/auth/refresh`,
-    { refresh_token: refreshToken }
-  );
+export function refreshAccessToken(): Promise<string> {
+  if (!refreshInFlight) {
+    refreshInFlight = (async () => {
+      const refreshToken = localStorage.getItem('refresh_token');
+      if (!refreshToken) throw new Error('No refresh token');
+      const { data } = await axios.post<AuthResponse>(`${env.apiUrl}/auth/refresh`, {
+        refresh_token: refreshToken,
+      });
+      persistTokens(data);
+      return data.access_token;
+    })().finally(() => {
+      refreshInFlight = null;
+    });
+  }
+  return refreshInFlight;
+}
 
-  persistTokens(data);
-  apiClient.defaults.headers.common.Authorization = `Bearer ${data.access_token}`;
-  return data.access_token;
+const refreshOrLogout = async (): Promise<string> => {
+  try {
+    return await refreshAccessToken();
+  } catch (err) {
+    clearSession();
+    throw err;
+  }
 };
 
 // --- Request interceptor: proactive refresh if token expires within 30s ---
 apiClient.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
-    if (isPublicPath(config.url)) {
-      return config;
-    }
+    if (isPublicPath(config.url)) return config;
 
     const expiresAt = localStorage.getItem('access_token_expires_at');
     const isExpiringSoon = expiresAt
       ? Date.now() >= new Date(expiresAt).getTime() - 30_000
       : false;
 
-    if (isExpiringSoon) {
-      if (isRefreshing) {
-        // Wait for the in-flight refresh to complete
-        const token = await new Promise<string>((resolve, reject) => {
-          queue.push({ resolve, reject });
-        });
-        config.headers.Authorization = `Bearer ${token}`;
-        return config;
-      }
-
-      isRefreshing = true;
-      try {
-        const token = await doRefresh();
-        flushQueue(token);
-        config.headers.Authorization = `Bearer ${token}`;
-      } catch (err) {
-        flushQueue(null, err);
-        clearSession();
-        return Promise.reject(err);
-      } finally {
-        isRefreshing = false;
-      }
-      return config;
-    }
-
-    const token = localStorage.getItem('access_token');
+    const token = isExpiringSoon ? await refreshOrLogout() : localStorage.getItem('access_token');
     if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
   },
@@ -117,33 +96,10 @@ apiClient.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    if (isRefreshing) {
-      return new Promise<AxiosResponse>((resolve, reject) => {
-        queue.push({
-          resolve: (token) => {
-            original.headers.Authorization = `Bearer ${token}`;
-            resolve(apiClient(original));
-          },
-          reject,
-        });
-      });
-    }
-
     original._retry = true;
-    isRefreshing = true;
-
-    try {
-      const token = await doRefresh();
-      flushQueue(token);
-      original.headers.Authorization = `Bearer ${token}`;
-      return apiClient(original);
-    } catch (refreshError) {
-      flushQueue(null, refreshError);
-      clearSession();
-      return Promise.reject(refreshError);
-    } finally {
-      isRefreshing = false;
-    }
+    const token = await refreshOrLogout();
+    original.headers.Authorization = `Bearer ${token}`;
+    return apiClient(original);
   }
 );
 

@@ -125,8 +125,9 @@ export class ConversationsController {
         participantUrlMap,
       );
       if (r.lastMessage) {
-        dto.lastMessage =
-          r.lastMessage.type === 'image' ? '[Hình ảnh]' : r.lastMessage.content;
+        // Client tự dựng preview theo type (ảnh/sticker không có chữ).
+        dto.lastMessage = r.lastMessage.content;
+        dto.lastMessageType = r.lastMessage.type;
         dto.lastMessageAt = r.lastMessage.createdAt;
       }
       return dto;

@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import type { MessageType } from 'src/modules/message/domain/message.entity';
 
 // Một participant trong conversation, đã loại field nội bộ.
 export class ParticipantResponseDto {
@@ -120,6 +121,9 @@ export class ConversationResponseDto {
 
   @ApiPropertyOptional({ example: 'Hello there' })
   lastMessage?: string;
+
+  @ApiPropertyOptional({ enum: ['text', 'image', 'sticker'], example: 'text' })
+  lastMessageType?: MessageType;
 
   @ApiPropertyOptional({ example: '2026-05-23T10:00:00.000Z' })
   lastMessageAt?: Date;

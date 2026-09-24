@@ -35,8 +35,8 @@ import type { ClientFocusPayload } from '../events/ws-events';
 export const userRoom = (userId: string) => `user:${userId}`;
 export const convRoom = (conversationId: string) => `conv:${conversationId}`;
 
-// Gateway Socket.IO chính. CORS để rộng (giống app.enableCors()) — siết lại khi có domain FE prod.
-@WebSocketGateway({ cors: { origin: '*', credentials: true } })
+// Gateway Socket.IO chính. CORS cấu hình ở CorsIoAdapter (main.ts).
+@WebSocketGateway()
 export class ChatGateway
   implements
     OnGatewayInit,

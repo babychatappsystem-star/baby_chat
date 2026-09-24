@@ -7,6 +7,8 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { join } from 'path';
 import * as morgan from 'morgan';
 import { errorCode } from 'src/shared/utils/error-code';
+import { getAllowedOrigins } from 'src/shared/config/cors';
+import { CorsIoAdapter } from 'src/shared/config/cors-io.adapter';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -17,7 +19,8 @@ async function bootstrap() {
   // Không dùng forbidNonWhitelisted (tránh 400 phá client hiện có) — chỉ silent-strip.
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
   app.useGlobalFilters(new GlobalExceptionFilter());
-  app.enableCors();
+  app.enableCors({ origin: getAllowedOrigins(), credentials: true });
+  app.useWebSocketAdapter(new CorsIoAdapter(app));
   app.use(morgan.default('dev'));
 
   // Serve file đã upload tại /uploads/<filename>. UPLOAD_DIR khớp với LocalStorageProvider.

@@ -5,6 +5,7 @@ import { ConversationDocument, ConversationSchema } from 'src/modules/conversati
 import { ConversationRepository } from 'src/modules/conversation/infrastructure/conversation.repository';
 import { IConversationRepository } from 'src/modules/conversation/domain/i-conversation.repository';
 import { UserModule } from 'src/modules/user/interfaces/users.module';
+import { FriendshipModule } from 'src/modules/friendship/interfaces/friendship.module';
 import { PageModule } from 'src/modules/message/interfaces/page.module';
 import { CreateConversationUseCase } from 'src/modules/conversation/application/use-cases/create-conversation.usecase';
 import { DeleteConversationUseCase } from 'src/modules/conversation/application/use-cases/delete-conversation.usecase';
@@ -28,6 +29,7 @@ import { StickerModule } from 'src/modules/sticker/sticker.module';
       { name: ConversationDocument.name, schema: ConversationSchema },
     ]),
     forwardRef(() => UserModule),
+    forwardRef(() => FriendshipModule),
     PageModule,
     FileModule,
     StickerModule,

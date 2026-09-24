@@ -11,8 +11,11 @@ import {
   FileAccessDeniedException,
   FileNotAllowedForMessageTypeException,
   FileNotFoundException,
+  FriendshipBlockedException,
   NotParticipantException,
 } from 'src/shared/exceptions/domain-exceptions';
+import { IFriendshipRepository } from 'src/modules/friendship/domain/i-friendship.repository';
+import { FriendshipStatus } from 'src/modules/friendship/domain/friendship.entity';
 import {
   InvalidMessageException,
   StickerNotFoundException,
@@ -46,6 +49,7 @@ export class SendMessageUseCase {
     @Inject(IPageRepository) private readonly pageRepository: IPageRepository,
     @Inject(IFileRepository) private readonly fileRepository: IFileRepository,
     @Inject(IStickerRepository) private readonly stickerRepository: IStickerRepository,
+    @Inject(IFriendshipRepository) private readonly friendshipRepository: IFriendshipRepository,
     @Inject(EVENT_BUS) private readonly eventBus: IEventBus,
   ) {}
 
@@ -55,6 +59,15 @@ export class SendMessageUseCase {
 
     if (!conversation.isParticipant(command.senderId)) {
       throw new NotParticipantException(command.senderId);
+    }
+
+    // Direct: chặn gửi nếu 1 trong 2 bên đã block bên kia. Unfriend vẫn được nhắn tiếp.
+    if (conversation.type === 'direct') {
+      const other = conversation.participants.find((p) => p.userId !== command.senderId);
+      if (other) {
+        const friendship = await this.friendshipRepository.findBetween(command.senderId, other.userId);
+        if (friendship?.status === FriendshipStatus.Blocked) throw new FriendshipBlockedException();
+      }
     }
 
     // File validation — chốt chặn thật (không tin mỗi lớp DTO; use case có thể được gọi từ chỗ khác).

@@ -19,6 +19,20 @@ function urlBase64ToUint8Array(base64String: string) {
 const sendSubscriptionToServer = (subscription: PushSubscription) =>
   apiClient.post('/notifications/subscribe', subscription.toJSON());
 
+// Gỡ subscription ở cả server lẫn trình duyệt (dùng khi logout) để người đăng nhập
+// sau trên cùng máy không nhận push của tài khoản cũ. Gọi TRƯỚC khi xoá token.
+export async function unsubscribeFromPush(): Promise<void> {
+  if (!('serviceWorker' in navigator)) return;
+  const registration = await navigator.serviceWorker.getRegistration();
+  const subscription = await registration?.pushManager.getSubscription();
+  if (!subscription) return;
+  try {
+    await apiClient.delete('/notifications/subscribe', { data: { endpoint: subscription.endpoint } });
+  } finally {
+    await subscription.unsubscribe();
+  }
+}
+
 export const usePushNotifications = () => {
   const [isSupported, setIsSupported] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission>('default');

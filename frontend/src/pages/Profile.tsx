@@ -44,6 +44,7 @@ import { updateExpressiveChatSettings } from '../services/userService';
 import { isSoundMuted, toggleSound } from '../lib/sound';
 import type { ProfileDTO } from '../types/api.types';
 import { authService } from '../services/authService';
+import { logout } from '../lib/session';
 import { friendService, getFriendErrorMessage } from '../services/friendService';
 import { fileService, getFileErrorMessage, validateImageFile } from '../services/fileService';
 import { useThemeToken } from '../hooks/useThemeToken';
@@ -144,8 +145,8 @@ const ProfilePage: React.FC = () => {
     }
   };
 
-  const handleLogout = () => {
-    authService.logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/login');
   };
 

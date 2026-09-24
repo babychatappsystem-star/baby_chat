@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Form, Input, Button, Typography, Card, Space, List } from 'antd';
 import { UserOutlined, LockOutlined, CheckCircleFilled, CloseCircleFilled } from '@ant-design/icons';
-import { authService } from '../services/authService';
+import * as session from '../lib/session';
 import { getApiErrorMessage } from '../utils/apiError';
 import { useToast } from '../hooks/useToast';
 import { useThemeToken } from '../hooks/useThemeToken';
@@ -59,7 +59,7 @@ const CreatePasswordPage: React.FC = () => {
   const handleSubmit = async (values: CreatePasswordFormData) => {
     setIsLoading(true);
     try {
-      const data = await authService.verifyRegistration({
+      const data = await session.verifyRegistration({
         email: emailUrl,
         token: tokenUrl,
         password: values.password,

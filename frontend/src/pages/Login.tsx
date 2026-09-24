@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Form, Input, Button, Checkbox, Divider, Alert, Typography, Card, Row, Col } from 'antd';
 import { MailOutlined, LockOutlined, GoogleOutlined, FacebookOutlined } from '@ant-design/icons';
 import { useThemeToken } from '../hooks/useThemeToken';
-import { authService } from '../services/authService';
+import * as session from '../lib/session';
 import { getApiErrorMessage } from '../utils/apiError';
 
 const { Title, Text } = Typography;
@@ -27,7 +27,7 @@ const LoginPage: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      await authService.login({ email: values.email, password: values.password });
+      await session.login({ email: values.email, password: values.password });
       navigate(from, { replace: true });
     } catch (err: unknown) {
       const msg = getApiErrorMessage(err, '');

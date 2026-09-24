@@ -4,7 +4,7 @@ import { SunOutlined, MoonOutlined, UserOutlined, SettingOutlined, LogoutOutline
 import type { MenuProps } from 'antd';
 import type { HeaderProps } from '../../types/layout';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { disconnectSocket } from '../../lib/socket';
+import { logout } from '../../lib/session';
 import { useNotifications } from '../../hooks/useNotifications';
 import type { AppNotification } from '../../hooks/useNotifications';
 import { authService } from '../../services/authService';
@@ -63,9 +63,8 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
     localStorage.setItem('theme', next ? 'dark' : 'light');
   };
 
-  const logOut = () => {
-    disconnectSocket(); // ngắt socket trước khi clear token
-    localStorage.clear();
+  const logOut = async () => {
+    await logout();
     navigate('/login');
   };
 

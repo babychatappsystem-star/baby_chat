@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import { IFileRepository } from 'src/modules/file/domain/i-file.repository';
 import { IStorageProvider } from 'src/modules/file/domain/i-storage.provider';
 import { FileCategory, FileEntity } from 'src/modules/file/domain/file.entity';
@@ -25,7 +25,7 @@ export class UploadImageUseCase {
   async execute(cmd: UploadImageCommand): Promise<FileEntity> {
     const processed = await this.imageProcessor.process(cmd.buffer, cmd.category);
 
-    const id = uuidv4();
+    const id = randomUUID();
     const filename = `${id}.webp`;
     const thumbFilename = `thumb_${id}.webp`;
 

@@ -308,7 +308,7 @@ const MessagesPage: React.FC = () => {
         avatar: resolveAvatarUrl(avatarUrl),
         lastMessage: messagePreview(conv.lastMessageType, conv.lastMessage) || 'No messages yet',
         timestamp: formatListTime(conv.lastMessageAt),
-        unread: 0,
+        unread: conv.unreadCount ?? 0,
         type: conv.type,
         memberCount: conv.participants.length,
         otherUserId: other?.userId,
@@ -446,6 +446,46 @@ const MessagesPage: React.FC = () => {
   // Phụ thuộc vào id, không phải object: reload danh sách hội thoại (vd khi socket
   // reconnect) tạo object mới cùng id — không được tải lại tin và mất vị trí cuộn.
   const selectedConversationId = selectedConversation?.id;
+
+  // ── Tin chưa đọc ──
+  // "Đang xem" = hội thoại được chọn, tab đang hiển thị, và trên mobile phải đang mở khung chat.
+  const [pageVisible, setPageVisible] = useState(() => document.visibilityState === 'visible');
+  useEffect(() => {
+    const onVisibility = () => setPageVisible(document.visibilityState === 'visible');
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, []);
+  const viewingConversationId =
+    selectedConversationId && pageVisible && (!isMobile || mobileView === 'chat')
+      ? selectedConversationId
+      : null;
+  const viewingUnread = conversations.find((c) => c.id === viewingConversationId)?.unread ?? 0;
+
+  useEffect(() => {
+    if (!viewingConversationId || viewingUnread === 0) return;
+    setConversations((prev) =>
+      prev.map((c) => (c.id === viewingConversationId ? { ...c, unread: 0 } : c)),
+    );
+    conversationService
+      .markRead(viewingConversationId)
+      .catch((err) => console.error('Failed to mark conversation as read', err));
+  }, [viewingConversationId, viewingUnread]);
+
+  useSocketEvent(WS_EVENTS.CONVERSATION_READ, (payload) => {
+    setConversations((prev) =>
+      prev.map((c) => (c.id === payload.conversationId ? { ...c, unread: 0 } : c)),
+    );
+  });
+
+  // Tổng tin chưa đọc trên tiêu đề tab: "(3) Baby Chat".
+  const totalUnread = conversations.reduce((sum, c) => sum + c.unread, 0);
+  useEffect(() => {
+    const baseTitle = document.title.replace(/^\(\d+\+?\) /, '');
+    document.title = totalUnread > 0 ? `(${totalUnread > 99 ? '99+' : totalUnread}) ${baseTitle}` : baseTitle;
+    return () => {
+      document.title = baseTitle;
+    };
+  }, [totalUnread]);
   useEffect(() => {
     const conversationId = selectedConversationId;
     if (!conversationId) { setMessages([]); return; }
@@ -467,10 +507,12 @@ const MessagesPage: React.FC = () => {
     setConversations((prev) => {
       const idx = prev.findIndex((c) => c.id === payload.conversationId);
       if (idx === -1) return prev;
+      const fromOthers = payload.senderId !== currentUserId;
       const updated = {
         ...prev[idx],
         lastMessage: messagePreview(payload.type as MessageKind, payload.content),
         timestamp: formatListTime(payload.createdAt),
+        unread: fromOthers ? prev[idx].unread + 1 : prev[idx].unread,
       };
       return [updated, ...prev.slice(0, idx), ...prev.slice(idx + 1)];
     });
@@ -865,7 +907,7 @@ const MessagesPage: React.FC = () => {
                     >
                       {convo.lastMessage}
                     </Text>
-                    {convo.unread > 0 && (
+                    {convo.unread > 0 && convo.id !== viewingConversationId && (
                       <Badge count={convo.unread} size="small" style={{ marginLeft: 8, flexShrink: 0, background: token.colorPrimary }} />
                     )}
                   </div>

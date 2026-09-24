@@ -35,6 +35,11 @@ export const conversationService = {
     return data;
   },
 
+  // Đánh dấu đã đọc hết hội thoại (server đẩy mốc đã đọc lên thời điểm hiện tại).
+  async markRead(conversationId: string): Promise<void> {
+    await apiClient.post(`/conversations/${conversationId}/read`);
+  },
+
   async addReaction(conversationId: string, messageId: string, emoji: string): Promise<void> {
     await apiClient.post(`/conversations/${conversationId}/messages/${messageId}/reactions`, { emoji });
   },

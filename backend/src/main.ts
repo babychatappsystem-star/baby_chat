@@ -4,7 +4,7 @@ import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './shared/filters/http-exception.filter';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { join } from 'path';
+import { resolve } from 'path';
 import * as morgan from 'morgan';
 import { errorCode } from 'src/shared/utils/error-code';
 import { getAllowedOrigins } from 'src/shared/config/cors';
@@ -25,7 +25,9 @@ async function bootstrap() {
 
   // Serve file đã upload tại /uploads/<filename>. UPLOAD_DIR khớp với LocalStorageProvider.
   const uploadDir = process.env.UPLOAD_DIR ?? './uploads';
-  app.useStaticAssets(join(process.cwd(), uploadDir), { prefix: '/uploads' });
+  app.useStaticAssets(resolve(process.cwd(), uploadDir), {
+    prefix: '/uploads',
+  });
 
   const config = new DocumentBuilder()
     .setTitle('BabyChat API')

@@ -29,6 +29,15 @@ import { IEventBus, EVENT_BUS } from 'src/shared/events/event-bus';
 import { MessageSentEvent } from 'src/modules/message/domain/message-sent.event';
 import { PageCreatedEvent } from 'src/modules/message/domain/page-created.event';
 
+// Snippet lưu kèm tin reply. Ảnh/sticker không có chữ → nhãn thay thế (hiển thị trên UI
+// nên dùng tiếng Anh); ảnh có caption thì dùng caption.
+const replySnippetFor = (original: MessageEntity): string => {
+  if (original.content) return original.content;
+  if (original.type === 'image') return '[Photo]';
+  if (original.type === 'sticker') return '[Sticker]';
+  return '';
+};
+
 export interface SendMessageCommand {
   conversationId: string;
   senderId: string;
@@ -123,9 +132,7 @@ export class SendMessageUseCase {
         command.replyId,
       );
       if (original) {
-        // Image message gốc có content rỗng → snippet hiển thị "[Hình ảnh]".
-        replySnippet =
-          original.type === 'image' ? '[Hình ảnh]' : original.content;
+        replySnippet = replySnippetFor(original);
         replySenderId = original.senderId;
       }
     }

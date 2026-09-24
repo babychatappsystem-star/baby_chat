@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
-import { Phone, Video, MoreVertical, Smile, Paperclip, MessageCircle, Reply, X, Sticker, Bell, BellOff } from 'lucide-react';
+import { Phone, Video, MoreVertical, Smile, Paperclip, MessageCircle, Reply, X, Sticker, Bell, BellOff, ArrowLeft } from 'lucide-react';
 import { Input, Button, Badge, Avatar, Tooltip, Typography, Space, Spin, Popover, message as antdMessage } from 'antd';
 import EmojiPicker, { Theme, type EmojiClickData } from 'emoji-picker-react';
 import { SearchOutlined, SendOutlined, TeamOutlined, UserOutlined } from '@ant-design/icons';
@@ -7,7 +7,7 @@ import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
 import isYesterday from 'dayjs/plugin/isYesterday';
 import { StickerPicker } from '../components/feature/StickerPicker';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { conversationService } from '../services/conversationService';
 import { getApiErrorMessage } from '../utils/apiError';
 
@@ -24,13 +24,24 @@ import { PresenceContext } from '../contexts/presence-context';
 import { usePresence } from '../hooks/usePresence';
 import { usePushNotifications } from '../shared/hooks/usePushNotifications';
 import environmentLoader from '../config/environmentLoader';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 const { Text, Title } = Typography;
 
+// URL tương đối (/uploads/...) từ local storage → ghép base URL của API.
 const resolveAvatarUrl = (url?: string | null) => {
   if (!url) return undefined;
   if (url.startsWith('/')) return `${environmentLoader.loadConfig().apiUrl}${url}`;
   return url;
+};
+
+type MessageKind = 'text' | 'image' | 'sticker';
+
+// Preview tin cuối trong danh sách hội thoại. Ảnh/sticker có thể không có chữ.
+const messagePreview = (type: MessageKind | undefined, content: string | undefined): string => {
+  if (type === 'image') return content ? `📷 ${content}` : '📷 Photo';
+  if (type === 'sticker') return 'Sticker';
+  return content ?? '';
 };
 
 interface IConversation {
@@ -140,6 +151,32 @@ const EmptyChatState: React.FC<{ name: string; onSend: () => void }> = ({ name, 
 // Tin tối thiểu khi mở hội thoại; ít hơn thì tải thêm page trước để khung chat không trống.
 const MIN_INITIAL_MESSAGES = 30;
 
+// ── Người dùng chưa có hội thoại nào (chưa kết bạn) ──
+const NoConversationsState: React.FC<{ onFindFriends: () => void }> = ({ onFindFriends }) => {
+  const token = useThemeToken();
+  return (
+    <div style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16,
+      height: 'calc(100dvh - 8rem)', padding: 32, textAlign: 'center',
+      borderRadius: 12, border: `1px solid ${token.colorBorderSecondary}`, background: token.colorBgContainer,
+    }}>
+      <div style={{
+        width: 80, height: 80, borderRadius: '50%', background: token.colorPrimaryBg,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <MessageCircle size={40} color={token.colorPrimary} strokeWidth={1.5} />
+      </div>
+      <div>
+        <Title level={5} style={{ marginBottom: 4 }}>No conversations yet</Title>
+        <Text type="secondary">Add a friend to start chatting. Your conversations will appear here.</Text>
+      </div>
+      <Button type="primary" shape="round" icon={<TeamOutlined />} onClick={onFindFriends}>
+        Find friends
+      </Button>
+    </div>
+  );
+};
+
 const MessagesPage: React.FC = () => {
   const token = useThemeToken();
   const isDark = useDarkMode();
@@ -148,6 +185,11 @@ const MessagesPage: React.FC = () => {
     () => localStorage.getItem('userId') ?? ''
   );
   const [conversations, setConversations] = useState<IConversation[]>([]);
+  const [conversationsLoaded, setConversationsLoaded] = useState(false);
+  const navigate = useNavigate();
+  // Mobile hiển thị 1 cột: danh sách hội thoại HOẶC khung chat.
+  const isMobile = useIsMobile();
+  const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
   const [selectedConversation, setSelectedConversation] = useState<IConversation | null>(null);
   const [messages, setMessages] = useState<IMessage[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
@@ -233,7 +275,10 @@ const MessagesPage: React.FC = () => {
   useEffect(() => {
     if (!requestedConvId || conversations.length === 0) return;
     const target = conversations.find((c) => c.id === requestedConvId);
-    if (target) setSelectedConversation(target);
+    if (target) {
+      setSelectedConversation(target);
+      setMobileView('chat');
+    }
     setSearchParams({}, { replace: true });
   }, [requestedConvId, conversations, setSearchParams]);
 
@@ -247,7 +292,7 @@ const MessagesPage: React.FC = () => {
         id: conv.id,
         name: conversationTitle(conv, currentUserId),
         avatar: resolveAvatarUrl(avatarUrl),
-        lastMessage: conv.lastMessage || 'No messages yet',
+        lastMessage: messagePreview(conv.lastMessageType, conv.lastMessage) || 'No messages yet',
         timestamp: formatTime(conv.lastMessageAt || conv.updatedAt),
         unread: 0,
         type: conv.type,
@@ -257,6 +302,7 @@ const MessagesPage: React.FC = () => {
       };
     });
     setConversations(convData);
+    setConversationsLoaded(true);
     if (convData.length > 0) {
       setSelectedConversation((prev) => {
         const requested = convData.find((c) => c.id === requestedConvIdRef.current);
@@ -331,6 +377,15 @@ const MessagesPage: React.FC = () => {
     el.scrollTop = el.scrollHeight - restore.height + restore.top;
   }, [messages]);
 
+  // Ảnh tải xong sau khi đã cuộn xuống cuối → nội dung dài thêm. Nếu người dùng đang ở
+  // gần cuối (khoảng cách ≤ chiều cao ảnh tối đa + lề) thì cuộn tiếp để ảnh không bị che.
+  const handleImageLoad = useCallback(() => {
+    const el = scrollContainerRef.current;
+    if (el && el.scrollHeight - el.scrollTop - el.clientHeight < 480) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+    }
+  }, []);
+
   const handleMessagesScroll = (e: React.UIEvent<HTMLDivElement>) => {
     if (hasOlderMessages && e.currentTarget.scrollTop < 80) loadOlderMessages();
   };
@@ -394,13 +449,17 @@ const MessagesPage: React.FC = () => {
   });
 
   useSocketEvent(WS_EVENTS.MESSAGE_NEW, (payload) => {
-    setConversations((prev) =>
-      prev.map((c) =>
-        c.id === payload.conversationId
-          ? { ...c, lastMessage: payload.content, timestamp: formatTime(payload.createdAt) }
-          : c
-      )
-    );
+    // Cập nhật preview và đưa hội thoại vừa có tin lên đầu danh sách.
+    setConversations((prev) => {
+      const idx = prev.findIndex((c) => c.id === payload.conversationId);
+      if (idx === -1) return prev;
+      const updated = {
+        ...prev[idx],
+        lastMessage: messagePreview(payload.type as MessageKind, payload.content),
+        timestamp: formatTime(payload.createdAt),
+      };
+      return [updated, ...prev.slice(0, idx), ...prev.slice(idx + 1)];
+    });
     if (payload.conversationId !== selectedConversation?.id) return;
     setMessages((prev) => [
       ...prev,
@@ -491,6 +550,7 @@ const MessagesPage: React.FC = () => {
     const content = contentOverride ?? newMessage;
     if (!content.trim() || isSending || !selectedConversation) return;
     
+    const replyToRestore = replyingTo;
     const replyIdToSend = replyingTo?.id;
     // Nếu không có override, reset newMessage (từ ô input) và clear replyingTo
     if (!contentOverride) {
@@ -509,6 +569,11 @@ const MessagesPage: React.FC = () => {
     } catch (err) {
       console.error('Failed to send message', err);
       showSendError(err);
+      // Trả lại nội dung đã gõ để người dùng gửi lại, trừ khi họ đã gõ tin khác.
+      if (!contentOverride) {
+        setNewMessage((current) => current || content);
+        setReplyingTo((current) => current ?? replyToRestore);
+      }
     } finally {
       setIsSending(false);
       inputRef.current?.focus();
@@ -606,11 +671,26 @@ const MessagesPage: React.FC = () => {
     inputRef.current?.focus();
   };
 
+  if (conversationsLoaded && conversations.length === 0) {
+    return <NoConversationsState onFindFriends={() => navigate('/friends')} />;
+  }
+
+  const showList = !isMobile || mobileView === 'list';
+  const showChat = !isMobile || mobileView === 'chat';
+
   return (
-    <div style={{ display: 'flex', height: 'calc(100vh - 8rem)', overflow: 'hidden', borderRadius: 12, border: `1px solid ${token.colorBorderSecondary}`, boxShadow: '0 2px 16px rgba(0,0,0,0.06)' }}>
+    // 100dvh: trên mobile không bị thanh địa chỉ của trình duyệt che mất phần ô nhập.
+    <div style={{ display: 'flex', height: 'calc(100dvh - 8rem)', overflow: 'hidden', borderRadius: 12, border: `1px solid ${token.colorBorderSecondary}`, boxShadow: '0 2px 16px rgba(0,0,0,0.06)' }}>
 
       {/* ── Conversation List ── */}
-      <div style={{ width: '28%', minWidth: 240, borderRight: `1px solid ${token.colorBorderSecondary}`, display: 'flex', flexDirection: 'column', background: token.colorBgContainer }}>
+      <div style={{
+        width: isMobile ? '100%' : '28%',
+        minWidth: isMobile ? 0 : 240,
+        borderRight: isMobile ? 'none' : `1px solid ${token.colorBorderSecondary}`,
+        display: showList ? 'flex' : 'none',
+        flexDirection: 'column',
+        background: token.colorBgContainer,
+      }}>
 
         {/* Sidebar header */}
         <div style={{ padding: '16px 16px 12px', borderBottom: `1px solid ${token.colorBorderSecondary}` }}>
@@ -654,7 +734,10 @@ const MessagesPage: React.FC = () => {
             return (
               <div
                 key={convo.id}
-                onClick={() => setSelectedConversation(convo)}
+                onClick={() => {
+                  setSelectedConversation(convo);
+                  setMobileView('chat');
+                }}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -720,17 +803,26 @@ const MessagesPage: React.FC = () => {
       </div>
 
       {/* ── Chat Window ── */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, background: token.colorBgLayout }}>
+      <div style={{ flex: 1, display: showChat ? 'flex' : 'none', flexDirection: 'column', minWidth: 0, background: token.colorBgLayout }}>
 
         {/* Chat Header */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '10px 20px',
+          padding: isMobile ? '8px 12px' : '10px 20px',
           background: token.colorBgContainer,
           borderBottom: `1px solid ${token.colorBorderSecondary}`,
           boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
         }}>
-          <Space size={12}>
+          <Space size={isMobile ? 8 : 12} style={{ minWidth: 0 }}>
+            {isMobile && (
+              <Button
+                type="text"
+                shape="circle"
+                icon={<ArrowLeft size={18} />}
+                aria-label="Back to conversations"
+                onClick={() => setMobileView('list')}
+              />
+            )}
             <div style={{ position: 'relative' }}>
               <Avatar
                 src={selectedConversation?.avatar || undefined}
@@ -780,7 +872,7 @@ const MessagesPage: React.FC = () => {
           ref={scrollContainerRef}
           className="chat-scroll"
           onScroll={handleMessagesScroll}
-          style={{ flex: 1, padding: '20px 24px', overflowY: 'auto' }}
+          style={{ flex: 1, padding: isMobile ? '12px' : '20px 24px', overflowY: 'auto' }}
         >
           {/* height 0 + sticky: spinner không làm đổi scrollHeight → không lệch vị trí khi chèn tin cũ */}
           {loadingOlder && (
@@ -922,18 +1014,25 @@ const MessagesPage: React.FC = () => {
 
                   <div
                     style={{
-                      maxWidth: 460,
+                      maxWidth: isMobile ? '78%' : 460,
+                      minWidth: 0,
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: isMe ? 'flex-end' : 'flex-start',
                     }}
                   >
+                    {/* Tên người gửi: chỉ ở nhóm, tin đầu của mỗi chuỗi */}
+                    {selectedConversation?.type === 'group' && !isMe && isFirstInGroup && (
+                      <Text type="secondary" style={{ fontSize: 12, margin: '0 0 2px 4px' }}>
+                        {senderParticipant?.username || 'Unknown'}
+                      </Text>
+                    )}
                     {/* Bubble */}
                     <Tooltip title={msg.timestamp} placement="top" mouseEnterDelay={0.4}>
                       <div
                         id={`msg-${msg.id}`}
                         style={{
-                          padding: msg.type === 'sticker' ? 0 : '9px 14px',
+                          padding: msg.type === 'sticker' ? 0 : msg.type === 'image' ? 4 : '9px 14px',
                           borderRadius: msg.type === 'sticker' 
                             ? 8 
                             : (isMe 
@@ -1010,8 +1109,24 @@ const MessagesPage: React.FC = () => {
                               display: 'block'
                             }}
                           />
+                        ) : msg.type === 'image' && msg.fileUrl ? (
+                          <>
+                            <a href={resolveAvatarUrl(msg.fileUrl)} target="_blank" rel="noopener noreferrer">
+                              <img
+                                src={resolveAvatarUrl(msg.fileUrl)}
+                                alt={msg.text || 'Photo'}
+                                onLoad={handleImageLoad}
+                                style={{ display: 'block', maxWidth: '100%', width: 280, maxHeight: 320, objectFit: 'cover', borderRadius: 14 }}
+                              />
+                            </a>
+                            {msg.text && (
+                              <Text style={{ display: 'block', color: isMe ? '#fff' : undefined, lineHeight: 1.5, whiteSpace: 'pre-wrap', padding: '6px 10px 4px' }}>
+                                {msg.text}
+                              </Text>
+                            )}
+                          </>
                         ) : (
-                          <Text style={{ display: 'block', color: isMe ? '#fff' : undefined, lineHeight: 1.5 }}>
+                          <Text style={{ display: 'block', color: isMe ? '#fff' : undefined, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
                             {msg.text}
                           </Text>
                         )}
@@ -1154,7 +1269,7 @@ const MessagesPage: React.FC = () => {
                     {(expressiveEmojis.length > 0 ? expressiveEmojis : DEFAULT_EXPRESSIVE_EMOJIS)[Math.min(emotionLevel, (expressiveEmojis.length > 0 ? expressiveEmojis : DEFAULT_EXPRESSIVE_EMOJIS).length - 1)]}
                   </div>
                 )}
-                <Tooltip title={`Gửi nhanh ${defaultEmoji} • Nhấn giữ để bộc lộ cảm xúc`} placement="bottom">
+                <Tooltip title={`Quick send ${defaultEmoji} • Hold to send a stronger emotion`} placement="bottom">
                   <Button 
                     type="text" 
                     size="small" 

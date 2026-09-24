@@ -187,6 +187,11 @@ export class ChatGateway
     }
   }
 
+  // Hội thoại đã xoá: đưa mọi socket ra khỏi room để không còn nhận event của nó.
+  removeConversationRoom(conversationId: string): void {
+    this.server.in(convRoom(conversationId)).socketsLeave(convRoom(conversationId));
+  }
+
   emitReactionUpdated(conversationId: string, payload: ReactionUpdatedPayload): void {
     this.server.to(convRoom(conversationId)).emit(WS_EVENTS.REACTION_UPDATED, payload);
   }

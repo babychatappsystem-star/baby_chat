@@ -5,6 +5,7 @@ import { IUserRepository } from 'src/modules/user/domain/i-user.repository';
 import { MessageSentEvent } from 'src/modules/message/domain/message-sent.event';
 import { IPageRepository } from 'src/modules/message/domain/i-page.repository';
 import { ConversationCreatedEvent } from 'src/modules/conversation/domain/conversation-created.event';
+import { ConversationDeletedEvent } from 'src/modules/conversation/domain/conversation-deleted.event';
 import { FriendRequestSentEvent } from 'src/modules/friendship/domain/friend-request-sent.event';
 import { FriendshipAcceptedEvent } from 'src/modules/friendship/domain/friendship-accepted.event';
 import { ReactionUpdatedEvent } from 'src/modules/message/domain/reaction-updated.event';
@@ -121,6 +122,11 @@ export class DomainEventsBridge {
         err as any,
       );
     }
+  }
+
+  @OnEvent('conversation.deleted')
+  onConversationDeleted(event: ConversationDeletedEvent): void {
+    this.gateway.removeConversationRoom(event.conversationId);
   }
 
   @OnEvent('reaction.updated')

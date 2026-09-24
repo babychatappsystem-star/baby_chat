@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
-import { Phone, Video, MoreVertical, Smile, Paperclip, MessageCircle, Reply, X, Sticker, Bell, BellOff, ArrowLeft } from 'lucide-react';
+import { Smile, MessageCircle, Reply, X, Sticker, Bell, BellOff, ArrowLeft, Clock } from 'lucide-react';
 import { Input, Button, Badge, Avatar, Tooltip, Typography, Space, Spin, Popover, message as antdMessage } from 'antd';
 import EmojiPicker, { Theme, type EmojiClickData } from 'emoji-picker-react';
 import { SearchOutlined, SendOutlined, TeamOutlined, UserOutlined } from '@ant-design/icons';
@@ -25,6 +25,11 @@ import { usePresence } from '../hooks/usePresence';
 import { usePushNotifications } from '../shared/hooks/usePushNotifications';
 import environmentLoader from '../config/environmentLoader';
 import { useIsMobile } from '../hooks/useIsMobile';
+import type { TextAreaRef } from 'antd/es/input/TextArea';
+import { formatListTime } from '../utils/chatFormat';
+import { LinkifiedText } from '../components/chat/LinkifiedText';
+import { LongPressable } from '../components/chat/LongPressable';
+import { MessageActionSheet } from '../components/chat/MessageActionSheet';
 
 const { Text, Title } = Typography;
 
@@ -71,7 +76,13 @@ interface IMessage {
   replySnippet?: string;
   replySenderId?: string;
   reactions: Array<{ userId: string; emoji: string }>;
+  // Tin tạm hiển thị ngay khi bấm gửi, chờ server xác nhận (id bắt đầu bằng "temp-").
+  pending?: boolean;
 }
+
+// Giới hạn độ dài tin (khớp backend) và ngưỡng bắt đầu hiện bộ đếm ký tự.
+const MESSAGE_MAX_LENGTH = 4000;
+const MESSAGE_COUNTER_FROM = 3500;
 
 const formatTime = (iso?: string): string =>
   iso ? dayjs(iso).format('HH:mm') : '';
@@ -200,7 +211,10 @@ const MessagesPage: React.FC = () => {
     id: string;
     text: string;
     senderName: string;
+    senderId: string;
   } | null>(null);
+  // Tin đang mở bảng thao tác (nhấn giữ trên màn hình cảm ứng).
+  const [actionSheetMessage, setActionSheetMessage] = useState<IMessage | null>(null);
 
   // Expressive Chat states
   const [thresholds, setThresholds] = useState<number>(5);
@@ -221,7 +235,7 @@ const MessagesPage: React.FC = () => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const shouldScrollBottomRef = useRef<boolean>(true);
   const prevLastMessageIdRef = useRef<string | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<TextAreaRef>(null);
   const { presenceMap } = React.useContext(PresenceContext);
   const selectedPresence = usePresence(selectedConversation?.otherUserId);
 
@@ -293,7 +307,7 @@ const MessagesPage: React.FC = () => {
         name: conversationTitle(conv, currentUserId),
         avatar: resolveAvatarUrl(avatarUrl),
         lastMessage: messagePreview(conv.lastMessageType, conv.lastMessage) || 'No messages yet',
-        timestamp: formatTime(conv.lastMessageAt || conv.updatedAt),
+        timestamp: formatListTime(conv.lastMessageAt),
         unread: 0,
         type: conv.type,
         memberCount: conv.participants.length,
@@ -456,28 +470,34 @@ const MessagesPage: React.FC = () => {
       const updated = {
         ...prev[idx],
         lastMessage: messagePreview(payload.type as MessageKind, payload.content),
-        timestamp: formatTime(payload.createdAt),
+        timestamp: formatListTime(payload.createdAt),
       };
       return [updated, ...prev.slice(0, idx), ...prev.slice(idx + 1)];
     });
     if (payload.conversationId !== selectedConversation?.id) return;
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: payload.messageId,
-        sender: payload.senderId === currentUserId ? 'me' : payload.senderId,
-        text: payload.content ?? '',
-        type: payload.type ?? 'text',
-        stickerUrl: payload.stickerUrl,
-        fileUrl: payload.fileUrl,
-        timestamp: formatTime(payload.createdAt),
-        rawDate: payload.createdAt ?? new Date().toISOString(),
-        replyId: payload.replyId,
-        replySnippet: payload.replySnippet,
-        replySenderId: payload.replySenderId,
-        reactions: [],
-      },
-    ]);
+    const incoming: IMessage = {
+      id: payload.messageId,
+      sender: payload.senderId === currentUserId ? 'me' : payload.senderId,
+      text: payload.content ?? '',
+      type: (payload.type as MessageKind) ?? 'text',
+      stickerUrl: payload.stickerUrl,
+      fileUrl: payload.fileUrl,
+      timestamp: formatTime(payload.createdAt),
+      rawDate: payload.createdAt ?? new Date().toISOString(),
+      replyId: payload.replyId,
+      replySnippet: payload.replySnippet,
+      replySenderId: payload.replySenderId,
+      reactions: [],
+    };
+    setMessages((prev) => {
+      if (prev.some((m) => m.id === incoming.id)) return prev;
+      // Tin của chính mình có thể về qua socket trước khi REST trả lời → thay tin tạm tương ứng.
+      if (incoming.sender === 'me') {
+        const tempIdx = prev.findIndex((m) => m.pending && m.text === incoming.text);
+        if (tempIdx !== -1) return prev.map((m, i) => (i === tempIdx ? incoming : m));
+      }
+      return [...prev, incoming];
+    });
   });
 
   useSocketEvent(WS_EVENTS.REACTION_UPDATED, (payload) => {
@@ -537,6 +557,32 @@ const MessagesPage: React.FC = () => {
     }
   };
 
+  const startReply = (msg: IMessage) => {
+    const isMine = msg.sender === 'me';
+    const participant = selectedConversation?.participants.find((p) => p.userId === msg.sender);
+    setReplyingTo({
+      id: msg.id,
+      text: msg.text || (msg.type === 'image' ? '[Photo]' : msg.type === 'sticker' ? '[Sticker]' : ''),
+      senderName: isMine ? 'You' : participant?.username || 'User',
+      senderId: isMine ? currentUserId : msg.sender,
+    });
+    inputRef.current?.focus();
+  };
+
+  const copyMessageText = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      antdMessage.success('Copied');
+    } catch {
+      antdMessage.error('Could not copy text');
+    }
+  };
+
+  const openConversation = (convo: IConversation) => {
+    setSelectedConversation(convo);
+    setMobileView('chat');
+  };
+
   const showSendError = (err: unknown) => {
     antdMessage.error(
       getApiErrorMessage(err, 'Failed to send message. Please try again.', {
@@ -558,16 +604,39 @@ const MessagesPage: React.FC = () => {
       setReplyingTo(null);
     }
     setIsSending(true);
+    // Hiện ngay tin tạm (mờ, "Sending…"); thay bằng tin thật khi REST hoặc socket trả về.
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const now = new Date().toISOString();
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: tempId,
+        sender: 'me',
+        text: content.trim(),
+        type: 'text',
+        timestamp: formatTime(now),
+        rawDate: now,
+        replyId: replyToRestore?.id,
+        replySnippet: replyToRestore?.text.slice(0, 80),
+        replySenderId: replyToRestore?.senderId,
+        reactions: [],
+        pending: true,
+      },
+    ]);
     try {
-      // Chỉ gửi qua REST — KHÔNG append vào messages ở đây.
-      // Tin sẽ tự về qua message.new (kể cả tin của chính mình) và được render ở handler WS.
-      await conversationService.sendMessage({
+      const saved = await conversationService.sendMessage({
         conversationId: selectedConversation.id,
         content,
         replyId: replyIdToSend,
       });
+      setMessages((prev) =>
+        prev.some((m) => m.id === saved.id)
+          ? prev.filter((m) => m.id !== tempId)
+          : prev.map((m) => (m.id === tempId ? mapMessage(saved, currentUserId) : m)),
+      );
     } catch (err) {
       console.error('Failed to send message', err);
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
       showSendError(err);
       // Trả lại nội dung đã gõ để người dùng gửi lại, trừ khi họ đã gõ tin khác.
       if (!contentOverride) {
@@ -708,9 +777,6 @@ const MessagesPage: React.FC = () => {
                   loading={pushNotifications.isLoading}
                 />
               </Tooltip>
-              <Badge count={conversations.reduce((s, c) => s + c.unread, 0)} size="small">
-                <Button type="text" size="small" icon={<TeamOutlined />} aria-label="All conversations" />
-              </Badge>
             </Space>
           </div>
           <Input
@@ -734,9 +800,17 @@ const MessagesPage: React.FC = () => {
             return (
               <div
                 key={convo.id}
-                onClick={() => {
-                  setSelectedConversation(convo);
-                  setMobileView('chat');
+                role="button"
+                tabIndex={0}
+                aria-current={isSelected ? 'true' : undefined}
+                aria-label={`${convo.name}. ${convo.lastMessage}${convo.timestamp ? `. ${convo.timestamp}` : ''}`}
+                className="conversation-item"
+                onClick={() => openConversation(convo)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    openConversation(convo);
+                  }
                 }}
                 style={{
                   display: 'flex',
@@ -854,17 +928,6 @@ const MessagesPage: React.FC = () => {
               </Text>
             </div>
           </Space>
-          <Space size={2}>
-            <Tooltip title="Feature coming soon">
-              <Button type="text" shape="circle" icon={<Phone size={18} />} aria-label="Voice call" disabled />
-            </Tooltip>
-            <Tooltip title="Feature coming soon">
-              <Button type="text" shape="circle" icon={<Video size={18} />} aria-label="Video call" disabled />
-            </Tooltip>
-            <Tooltip title="More options">
-              <Button type="text" shape="circle" icon={<MoreVertical size={18} />} aria-label="More options" />
-            </Tooltip>
-          </Space>
         </div>
 
         {/* Messages Area */}
@@ -908,12 +971,10 @@ const MessagesPage: React.FC = () => {
 
               const hasReactions = Object.keys(groupedReactions).length > 0;
 
-              const messageActions = (
+              const messageActions = msg.pending ? null : (
                 <div
                   className="message-actions"
                   style={{
-                    opacity: 0,
-                    transition: 'opacity 0.2s',
                     alignSelf: hasReactions ? 'flex-start' : 'center',
                     marginTop: hasReactions ? 4 : 0,
                     display: 'flex',
@@ -927,15 +988,8 @@ const MessagesPage: React.FC = () => {
                       shape="circle"
                       icon={<Reply size={16} />}
                       style={{ color: token.colorTextSecondary }}
-                      onClick={() => {
-                        const senderName = isMe ? 'You' : (senderParticipant?.username || 'User');
-                        setReplyingTo({
-                          id: msg.id,
-                          text: msg.text,
-                          senderName,
-                        });
-                        inputRef.current?.focus();
-                      }}
+                      aria-label="Reply"
+                      onClick={() => startReply(msg)}
                     />
                   </Tooltip>
                   <Popover
@@ -948,7 +1002,7 @@ const MessagesPage: React.FC = () => {
                         style={{ border: 'none' }}
                       />
                     }
-                    overlayInnerStyle={{ padding: 0, overflow: 'hidden', borderRadius: 8 }}
+                    styles={{ container: { padding: 0, overflow: 'hidden', borderRadius: 8 } }}
                     trigger="click"
                     placement={isMe ? 'left' : 'right'}
                   >
@@ -957,6 +1011,7 @@ const MessagesPage: React.FC = () => {
                       shape="circle"
                       icon={<Smile size={16} />}
                       style={{ color: token.colorTextSecondary }}
+                      aria-label="Add reaction"
                     />
                   </Popover>
                 </div>
@@ -987,13 +1042,6 @@ const MessagesPage: React.FC = () => {
                     gap: 8,
                   }}
                 >
-                  <style>
-                    {`
-                      .message-row:hover .message-actions {
-                        opacity: 1 !important;
-                      }
-                    `}
-                  </style>
                   {/* Avatar người gửi (chỉ hiện ở tin đầu của chuỗi) */}
                   {!isMe && (
                     <div style={{ width: 32, flexShrink: 0 }}>
@@ -1027,8 +1075,19 @@ const MessagesPage: React.FC = () => {
                         {senderParticipant?.username || 'Unknown'}
                       </Text>
                     )}
-                    {/* Bubble */}
-                    <Tooltip title={msg.timestamp} placement="top" mouseEnterDelay={0.4}>
+                    {/* Bubble — nhấn giữ trên cảm ứng mở bảng thao tác */}
+                    <LongPressable
+                      className="message-bubble"
+                      disabled={msg.pending}
+                      onLongPress={() => setActionSheetMessage(msg)}
+                    >
+                    <Tooltip
+                      title={msg.pending ? 'Sending…' : msg.timestamp}
+                      placement="top"
+                      mouseEnterDelay={0.4}
+                      // Trên cảm ứng tooltip bật khi chạm và che nội dung — tắt hẳn.
+                      open={isMobile ? false : undefined}
+                    >
                       <div
                         id={`msg-${msg.id}`}
                         style={{
@@ -1049,14 +1108,26 @@ const MessagesPage: React.FC = () => {
                             : (highlightedMessageId === msg.id
                                 ? `0 0 0 3px ${token.colorPrimary}, 0 4px 14px rgba(232, 56, 90, 0.4)`
                                 : '0 1px 3px rgba(0,0,0,0.07)'),
-                          transition: 'box-shadow 0.3s ease, border-color 0.3s ease',
+                          transition: 'box-shadow 0.3s ease, border-color 0.3s ease, opacity 0.2s',
                           wordBreak: 'break-word',
+                          opacity: msg.pending ? 0.6 : 1,
+                          maxWidth: '100%',
                         }}
                       >
                         {/* Quoted Message Snippet */}
                         {msg.replySnippet && (
                           <div
+                            className="reply-quote"
+                            role="button"
+                            tabIndex={0}
+                            aria-label="Go to the original message"
                             onClick={() => handleScrollToOriginal(msg.replyId)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                handleScrollToOriginal(msg.replyId);
+                              }
+                            }}
                             style={{
                               display: 'flex',
                               flexDirection: 'column',
@@ -1070,6 +1141,7 @@ const MessagesPage: React.FC = () => {
                               cursor: 'pointer',
                               userSelect: 'none',
                               transition: 'opacity 0.2s',
+                              minWidth: 0,
                             }}
                             title="Click to view original message"
                           >
@@ -1092,7 +1164,7 @@ const MessagesPage: React.FC = () => {
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
                                 whiteSpace: 'nowrap',
-                                maxWidth: 360,
+                                maxWidth: '100%',
                               }}
                             >
                               {msg.replySnippet}
@@ -1121,17 +1193,23 @@ const MessagesPage: React.FC = () => {
                             </a>
                             {msg.text && (
                               <Text style={{ display: 'block', color: isMe ? '#fff' : undefined, lineHeight: 1.5, whiteSpace: 'pre-wrap', padding: '6px 10px 4px' }}>
-                                {msg.text}
+                                <LinkifiedText text={msg.text} linkColor={isMe ? '#fff' : token.colorPrimary} />
                               </Text>
                             )}
                           </>
                         ) : (
                           <Text style={{ display: 'block', color: isMe ? '#fff' : undefined, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
-                            {msg.text}
+                            <LinkifiedText text={msg.text} linkColor={isMe ? '#fff' : token.colorPrimary} />
                           </Text>
                         )}
                       </div>
                     </Tooltip>
+                    </LongPressable>
+                    {msg.pending && (
+                      <Text type="secondary" style={{ fontSize: 11, marginTop: 2, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <Clock size={11} /> Sending…
+                      </Text>
+                    )}
 
                     {/* Reactions Display (bên dưới bong bóng, căn trái theo mép bong bóng) */}
                     {hasReactions && (
@@ -1151,9 +1229,14 @@ const MessagesPage: React.FC = () => {
                           const iReacted = userIds.includes(currentUserId);
                           return (
                             <Tooltip key={emoji} title={userIds.length + ' reactions'}>
-                              <div
+                              <button
+                                type="button"
+                                className="reaction-chip"
+                                aria-pressed={iReacted}
+                                aria-label={`${emoji} ${userIds.length}. ${iReacted ? 'Remove your reaction' : 'React'}`}
                                 onClick={() => handleReact(msg.id, emoji)}
                                 style={{
+                                  font: 'inherit',
                                   padding: '2px 6px',
                                   borderRadius: 12,
                                   background: iReacted ? token.colorPrimaryBg : token.colorBgContainer,
@@ -1170,7 +1253,7 @@ const MessagesPage: React.FC = () => {
                                 <span style={{ color: iReacted ? token.colorPrimary : token.colorTextSecondary, fontWeight: iReacted ? 600 : 'normal' }}>
                                   {userIds.length}
                                 </span>
-                              </div>
+                              </button>
                             </Tooltip>
                           );
                         })}
@@ -1230,17 +1313,15 @@ const MessagesPage: React.FC = () => {
           <form onSubmit={handleFormSubmit}>
             <div style={{
               display: 'flex',
-              alignItems: 'center',
+              // Ô nhập nhiều dòng giãn lên trên; các nút giữ ở đáy.
+              alignItems: 'flex-end',
               gap: 6,
               padding: '6px 6px 6px 12px',
-              borderRadius: 999,
+              borderRadius: 20,
               border: `1.5px solid ${token.colorBorderSecondary}`,
               background: token.colorFillQuaternary,
               transition: 'border-color 0.2s',
             }}>
-              <Tooltip title="Feature coming soon">
-                <Button type="text" size="small" icon={<Paperclip size={18} />} aria-label="Attach file" disabled />
-              </Tooltip>
               <Popover
                 content={<StickerPicker onSelect={handleSendSticker} />}
                 trigger="click"
@@ -1300,26 +1381,28 @@ const MessagesPage: React.FC = () => {
                   </Button>
                 </Tooltip>
               </div>
-              <input
+              <Input.TextArea
                 ref={inputRef}
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Escape' && replyingTo) {
                     setReplyingTo(null);
+                    return;
+                  }
+                  // Enter gửi, Shift+Enter xuống dòng. Không gửi khi bộ gõ (Telex/VNI, IME)
+                  // đang ghép chữ — Enter lúc đó chỉ để xác nhận ký tự.
+                  if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing && e.keyCode !== 229) {
+                    e.preventDefault();
+                    handleSendMessage();
                   }
                 }}
                 placeholder="Type a message..."
                 aria-label="Message input"
-                style={{
-                  flex: 1,
-                  border: 'none',
-                  outline: 'none',
-                  background: 'transparent',
-                  fontSize: 14,
-                  color: token.colorText,
-                  padding: '4px 0',
-                }}
+                autoSize={{ minRows: 1, maxRows: 5 }}
+                maxLength={MESSAGE_MAX_LENGTH}
+                variant="borderless"
+                style={{ flex: 1, fontSize: 14, padding: '4px 0', resize: 'none' }}
               />
               <Button
                 type="primary"
@@ -1332,9 +1415,28 @@ const MessagesPage: React.FC = () => {
                 htmlType="submit"
               />
             </div>
+            {newMessage.length > MESSAGE_COUNTER_FROM && (
+              <Text
+                type={newMessage.length >= MESSAGE_MAX_LENGTH ? 'danger' : 'secondary'}
+                style={{ display: 'block', textAlign: 'right', fontSize: 11, marginTop: 4 }}
+                aria-live="polite"
+              >
+                {newMessage.length}/{MESSAGE_MAX_LENGTH}
+              </Text>
+            )}
           </form>
         </div>
       </div>
+
+      <MessageActionSheet
+        open={!!actionSheetMessage}
+        isDark={isDark}
+        canCopy={!!actionSheetMessage?.text}
+        onClose={() => setActionSheetMessage(null)}
+        onReact={(emoji) => actionSheetMessage && handleReact(actionSheetMessage.id, emoji)}
+        onReply={() => actionSheetMessage && startReply(actionSheetMessage)}
+        onCopy={() => actionSheetMessage && copyMessageText(actionSheetMessage.text)}
+      />
     </div>
   );
 };

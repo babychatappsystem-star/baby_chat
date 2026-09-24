@@ -5,7 +5,6 @@ import { UserDocument, UserSchema } from 'src/modules/user/infrastructure/user.s
 import { UserRepository } from 'src/modules/user/infrastructure/user.repository';
 import { IUserRepository } from 'src/modules/user/domain/i-user.repository';
 import {
-  GetAllUsersUseCase,
   GetUserByIdUseCase,
   DeleteUserUseCase,
 } from 'src/modules/user/application/use-cases/get-users.usecase';
@@ -29,7 +28,6 @@ import { FriendshipModule } from 'src/modules/friendship/interfaces/friendship.m
   controllers: [UsersController],
   providers: [
     { provide: IUserRepository, useClass: UserRepository },
-    GetAllUsersUseCase,
     GetUserByIdUseCase,
     DeleteUserUseCase,
     GetOrCreateFriendCodeUseCase,

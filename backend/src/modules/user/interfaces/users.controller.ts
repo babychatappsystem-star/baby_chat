@@ -1,8 +1,8 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/modules/auth/interfaces/guards/jwt-auth.guard';
 import { CurrentUser } from 'src/shared/decorators/current-user.decorator';
-import { GetAllUsersUseCase, GetUserByIdUseCase, DeleteUserUseCase } from 'src/modules/user/application/use-cases/get-users.usecase';
+import { GetUserByIdUseCase, DeleteUserUseCase } from 'src/modules/user/application/use-cases/get-users.usecase';
 import { GetOrCreateFriendCodeUseCase } from 'src/modules/user/application/use-cases/get-or-create-friend-code.usecase';
 import { RegenerateFriendCodeUseCase } from 'src/modules/user/application/use-cases/regenerate-friend-code.usecase';
 import { GetUserByFriendCodeUseCase } from 'src/modules/user/application/use-cases/get-user-by-friend-code.usecase';
@@ -15,7 +15,6 @@ import { FileUrlResolver } from 'src/modules/file/application/file-url-resolver.
 import { UpdateAvatarDto } from './dto/update-avatar.dto';
 import { UserPublicDto } from './dto/user-public.dto';
 import { FriendCodeResponseDto } from './dto/friend-code.dto';
-import { PaginationQueryDto, PaginatedUsersResponseDto } from './dto/pagination.dto';
 import { UpdatePresenceSettingsDto, FriendPresenceItemDto } from './dto/presence.dto';
 import { UpdateExpressiveChatSettingsDto } from './dto/update-expressive-chat-settings.dto';
 
@@ -24,8 +23,6 @@ import { UpdateExpressiveChatSettingsDto } from './dto/update-expressive-chat-se
 @Controller('users')
 export class UsersController {
   constructor(
-
-    private readonly getAllUsersUseCase: GetAllUsersUseCase,
     private readonly getUserByIdUseCase: GetUserByIdUseCase,
     private readonly deleteUserUseCase: DeleteUserUseCase,
     private readonly getOrCreateFriendCodeUseCase: GetOrCreateFriendCodeUseCase,
@@ -37,31 +34,6 @@ export class UsersController {
     private readonly updateExpressiveChatSettingsUseCase: UpdateExpressiveChatSettingsUseCase,
     private readonly getFriendsPresenceUseCase: GetFriendsPresenceUseCase,
   ) {}
-
-
-
-  @ApiBearerAuth('access-token')
-  @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Lấy danh sách users (có phân trang)' })
-  @ApiResponse({ status: 200, type: PaginatedUsersResponseDto })
-  // GET /users — yêu cầu JWT. Có hỗ trợ phân trang page và limit.
-  @Get()
-  async getAllUsers(@Query() query: PaginationQueryDto): Promise<PaginatedUsersResponseDto> {
-    const result = await this.getAllUsersUseCase.execute(query);
-    const avatarMap = await this.fileUrlResolver.resolveMany(
-      result.items.map((u) => u.avatarFileId),
-    );
-    return {
-      items: result.items.map((user) => {
-        const resolved = user.avatarFileId ? avatarMap.get(user.avatarFileId) : null;
-        return UserPublicDto.fromEntity(user, resolved?.url, true); // Admin list có thể hiện email
-      }),
-      total: result.total,
-      page: result.page,
-      limit: result.limit,
-      totalPages: result.totalPages,
-    };
-  }
 
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard)
@@ -120,10 +92,13 @@ export class UsersController {
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Lấy user theo ID' })
+  @ApiResponse({ status: 200, type: UserPublicDto })
   // GET /users/:id — yêu cầu JWT. 404 nếu không tồn tại.
   @Get(':id')
-  getUserById(@Param('id') id: string) {
-    return this.getUserByIdUseCase.execute(id);
+  async getUserById(@Param('id') id: string): Promise<UserPublicDto> {
+    const user = await this.getUserByIdUseCase.execute(id);
+    const resolved = await this.fileUrlResolver.resolve(user.avatarFileId);
+    return UserPublicDto.fromEntity(user, resolved?.url, false);
   }
 
   @ApiBearerAuth('access-token')

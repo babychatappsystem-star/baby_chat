@@ -80,23 +80,10 @@ export class UserRepository implements IUserRepository {
     await this.userModel.deleteOne({ _id: id });
   }
 
-  // Lấy toàn bộ user (cẩn thận khi data lớn — nên dùng findPaginated).
+  // Lấy toàn bộ user (cẩn thận khi data lớn).
   async findAll(): Promise<UserEntity[]> {
     const docs = await this.userModel.find().lean();
     return docs.map((doc) => UserMapper.toDomain(doc as UserDocument));
-  }
-
-  // Lấy danh sách user có phân trang và tổng số lượng
-  async findPaginated(page: number, limit: number): Promise<{ items: UserEntity[]; total: number }> {
-    const skip = (page - 1) * limit;
-    const [docs, total] = await Promise.all([
-      this.userModel.find().skip(skip).limit(limit).lean(),
-      this.userModel.countDocuments(),
-    ]);
-    return {
-      items: docs.map((doc) => UserMapper.toDomain(doc as UserDocument)),
-      total,
-    };
   }
 
   // Ghi lastSeenAt; dùng updateOne (không cần trả document về).

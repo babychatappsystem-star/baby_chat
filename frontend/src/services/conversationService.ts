@@ -29,14 +29,6 @@ export const conversationService = {
     return data;
   },
 
-  // Tiện ích: lấy tin nhắn của trang mới nhất (pageNumber lớn nhất).
-  async getLatestMessages(conversationId: string): Promise<MessageDTO[]> {
-    const pages = await this.getPages(conversationId);
-    if (pages.length === 0) return [];
-    const latest = pages.reduce((a, b) => (b.pageNumber > a.pageNumber ? b : a));
-    return this.getMessagesByPage(conversationId, latest.pageNumber);
-  },
-
   async sendMessage(payload: SendMessagePayload): Promise<void> {
     await apiClient.post('/conversations/messages', payload);
   },

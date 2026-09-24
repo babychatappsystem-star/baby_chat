@@ -7,6 +7,7 @@ import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
 import isYesterday from 'dayjs/plugin/isYesterday';
 import { StickerPicker } from '../components/feature/StickerPicker';
+import { useSearchParams } from 'react-router-dom';
 import { conversationService } from '../services/conversationService';
 
 dayjs.extend(isToday);
@@ -218,6 +219,20 @@ const MessagesPage: React.FC = () => {
     return () => window.removeEventListener('profile-updated', loadProfileData);
   }, []);
 
+  // ?c=<conversationId> (từ push notification) → mở đúng hội thoại, rồi xoá param
+  // để các lần reload danh sách sau không ép chọn lại hội thoại đó.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedConvId = searchParams.get('c');
+  const requestedConvIdRef = useRef(requestedConvId);
+  requestedConvIdRef.current = requestedConvId;
+
+  useEffect(() => {
+    if (!requestedConvId || conversations.length === 0) return;
+    const target = conversations.find((c) => c.id === requestedConvId);
+    if (target) setSelectedConversation(target);
+    setSearchParams({}, { replace: true });
+  }, [requestedConvId, conversations, setSearchParams]);
+
   const loadConversations = useCallback(async () => {
     const dtos = await conversationService.getConversations();
     const valid = dtos.filter((conv) => conv.id);
@@ -240,6 +255,8 @@ const MessagesPage: React.FC = () => {
     setConversations(convData);
     if (convData.length > 0) {
       setSelectedConversation((prev) => {
+        const requested = convData.find((c) => c.id === requestedConvIdRef.current);
+        if (requested) return requested;
         if (!prev) return convData[0];
         const fresh = convData.find((c) => c.id === prev.id);
         return fresh ?? convData[0];

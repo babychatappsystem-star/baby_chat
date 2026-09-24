@@ -46,7 +46,7 @@ export class NotificationService implements OnModuleInit {
       const payload = JSON.stringify({
         title: 'BabyChat',
         body: `${senderName}: ${event.content || 'đã gửi một tin nhắn'}`,
-        url: `/chat/${event.conversationId}`,
+        url: `/messages?c=${event.conversationId}`,
       });
 
       for (const participant of conversation.participants) {

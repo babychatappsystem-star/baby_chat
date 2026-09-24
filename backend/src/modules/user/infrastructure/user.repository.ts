@@ -112,23 +112,28 @@ export class UserRepository implements IUserRepository {
   }
 
   // Web Push Notifications
+  // Mỗi endpoint = 1 trình duyệt, chỉ thuộc về 1 user: gỡ khỏi mọi user (kể cả chính mình)
+  // rồi mới gắn lại, để trình duyệt đổi tài khoản không nhận push của tài khoản cũ.
   async addPushSubscription(userId: string, subscription: { endpoint: string; keys: { p256dh: string; auth: string } }): Promise<void> {
-    // Add to array, but we might want to avoid duplicates by endpoint
-    // Using $pull first then $push is a simple way to replace if endpoint exists
-    await this.userModel.updateOne(
-      { _id: userId },
-      { $pull: { pushSubscriptions: { endpoint: subscription.endpoint } } }
+    const _id = this.toObjectId(userId);
+    await this.userModel.updateMany(
+      { 'pushSubscriptions.endpoint': subscription.endpoint },
+      { $pull: { pushSubscriptions: { endpoint: subscription.endpoint } } },
     );
-    await this.userModel.updateOne(
-      { _id: userId },
-      { $push: { pushSubscriptions: subscription } }
-    );
+    await this.userModel.updateOne({ _id }, { $push: { pushSubscriptions: subscription } });
   }
 
   async removePushSubscription(userId: string, endpoint: string): Promise<void> {
-    await this.userModel.updateOne(
-      { _id: userId },
-      { $pull: { pushSubscriptions: { endpoint } } }
-    );
+    const _id = this.toObjectId(userId);
+    await this.userModel.updateOne({ _id }, { $pull: { pushSubscriptions: { endpoint } } });
+  }
+
+  // Mongoose bỏ key undefined khỏi filter ({ _id: undefined } → {}), nên phải chặn trước
+  // để update không bao giờ rơi vào document đầu tiên của collection.
+  private toObjectId(userId: string): Types.ObjectId {
+    if (!userId || !Types.ObjectId.isValid(userId)) {
+      throw new Error(`Invalid userId: ${String(userId)}`);
+    }
+    return new Types.ObjectId(userId);
   }
 }

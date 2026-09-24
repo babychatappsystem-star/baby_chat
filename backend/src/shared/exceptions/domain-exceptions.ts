@@ -169,6 +169,19 @@ export class FriendshipBlockedException extends HttpException {
   }
 }
 
+export class NotFriendsException extends HttpException {
+  constructor(userId: string) {
+    super(
+      {
+        error: 'NotFriends',
+        message: `User '${userId}' is not your friend`,
+        statusCode: HttpStatus.FORBIDDEN,
+      },
+      HttpStatus.FORBIDDEN,
+    );
+  }
+}
+
 export class NotFriendshipRecipientException extends HttpException {
   constructor() {
     super(

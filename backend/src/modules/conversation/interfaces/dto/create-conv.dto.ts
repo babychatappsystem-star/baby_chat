@@ -1,9 +1,10 @@
-import { IsString, IsArray, ArrayMinSize, ValidateNested, IsOptional, IsIn } from "class-validator";
+import { IsString, IsArray, ArrayMinSize, ValidateNested, IsOptional, IsIn, IsMongoId } from "class-validator";
 import { Type } from "class-transformer";
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 class ParticipantInputDto {
   @ApiProperty({ example: '64a1b2c3d4e5f6a7b8c9d0e1' })
+  @IsMongoId()
   userId: string;
 }
 

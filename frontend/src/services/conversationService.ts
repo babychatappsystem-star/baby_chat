@@ -29,8 +29,10 @@ export const conversationService = {
     return data;
   },
 
-  async sendMessage(payload: SendMessagePayload): Promise<void> {
-    await apiClient.post('/conversations/messages', payload);
+  // Trả về tin đã lưu (có id thật) để thay thế tin tạm "đang gửi" ở client.
+  async sendMessage(payload: SendMessagePayload): Promise<MessageDTO> {
+    const { data } = await apiClient.post<MessageDTO>('/conversations/messages', payload);
+    return data;
   },
 
   async addReaction(conversationId: string, messageId: string, emoji: string): Promise<void> {

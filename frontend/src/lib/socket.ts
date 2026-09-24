@@ -55,7 +55,8 @@ export function getSocket(): AppSocket | null {
   return socket;
 }
 
+// Giữ lại instance: các hook (useSocketEvent/useSocketConnect) đã gắn listener vào nó,
+// lần login sau connectSocket() chỉ đổi token và connect lại chính instance này.
 export function disconnectSocket(): void {
   socket?.disconnect();
-  socket = null;
 }

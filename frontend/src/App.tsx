@@ -13,8 +13,7 @@ import About from './pages/About';
 import Service from './pages/Service';
 import FriendsPage from './pages/Friends';
 import ProfilePage from './pages/Profile';
-import { connectSocket } from './lib/socket';
-import { authService } from './services/authService';
+import { startRealtime } from './lib/session';
 import { useSocketEvent } from './hooks/useSocketEvent';
 import { WS_EVENTS } from './lib/wsEvents';
 import { playNotificationSound } from './lib/sound';
@@ -47,13 +46,11 @@ const App: React.FC = () => {
     return () => observer.disconnect();
   }, []);
 
-  // Kết nối socket khi có access token (sau khi đã đăng nhập).
-  // Không disconnect ở cleanup: socket là singleton sống suốt phiên;
-  // chỉ ngắt khi logout. (Tránh StrictMode cắt kết nối giữa handshake.)
+  // Mở app khi đã có phiên đăng nhập sẵn (reload trang). Login/verify tự kết nối
+  // qua lib/session. Không disconnect ở cleanup: socket sống suốt phiên, chỉ ngắt
+  // khi logout. (Tránh StrictMode cắt kết nối giữa handshake.)
   useEffect(() => {
-    const token = authService.getAccessToken();
-    if (!token) return;
-    connectSocket(token);
+    startRealtime();
   }, []);
 
   // Phát âm thanh toàn cục — chỉ khi người KHÁC gửi.

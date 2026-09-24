@@ -28,6 +28,7 @@ export class ConversationMapper {
         joinedAt: p.joinedAt,
         leftAt: p.leftAt,
         isActive: p.isActive ?? false,
+        lastReadAt: p.lastReadAt,
       }),
     );
 
@@ -71,6 +72,7 @@ export class ConversationMapper {
         joinedAt: p.joinedAt,
         leftAt: p.leftAt,
         isActive: p.isActive,
+        lastReadAt: p.lastReadAt,
       })),
       settings: {
         isPrivate: entity.settings.isPrivate,

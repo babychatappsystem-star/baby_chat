@@ -16,6 +16,9 @@ export class ParticipantEntity {
   readonly joinedAt: Date;
   readonly leftAt?: Date;
   readonly isActive: boolean;
+  // Mốc đã đọc: tin của người khác gửi sau mốc này là chưa đọc. undefined = dữ liệu
+  // trước khi có tính năng (được khởi tạo lười khi tải danh sách hội thoại).
+  readonly lastReadAt?: Date;
 
   private constructor(props: {
     userId: string;
@@ -24,6 +27,7 @@ export class ParticipantEntity {
     joinedAt: Date;
     leftAt?: Date;
     isActive: boolean;
+    lastReadAt?: Date;
   }) {
     this.userId = props.userId;
     this._username = props.username;
@@ -31,6 +35,7 @@ export class ParticipantEntity {
     this.joinedAt = props.joinedAt;
     this.leftAt = props.leftAt;
     this.isActive = props.isActive;
+    this.lastReadAt = props.lastReadAt;
   }
 
   get username(): string {
@@ -46,7 +51,8 @@ export class ParticipantEntity {
     this._username = trimmed;
   }
 
-  // Tạo participant MỚI khi user tham gia conversation. joinedAt = now, isActive = true.
+  // Tạo participant MỚI khi user tham gia conversation. joinedAt = now, isActive = true,
+  // lastReadAt = now (người mới vào bắt đầu ở trạng thái đã đọc hết).
   static create(props: CreateParticipantProps): ParticipantEntity {
     const validRoles: ParticipantRole[] = ['admin', 'member', 'moderator'];
     if (!validRoles.includes(props.role)) {
@@ -57,12 +63,14 @@ export class ParticipantEntity {
     if (!props.username || props.username.trim().length === 0) {
       throw new DomainError('Username is required');
     }
+    const now = new Date();
     return new ParticipantEntity({
       userId: props.userId,
       username: props.username.trim(),
       role: props.role,
-      joinedAt: new Date(),
+      joinedAt: now,
       isActive: true,
+      lastReadAt: now,
     });
   }
 
@@ -74,6 +82,7 @@ export class ParticipantEntity {
     joinedAt: Date;
     leftAt?: Date;
     isActive: boolean;
+    lastReadAt?: Date;
   }): ParticipantEntity {
     return new ParticipantEntity(props);
   }

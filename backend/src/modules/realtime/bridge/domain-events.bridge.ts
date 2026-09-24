@@ -5,6 +5,7 @@ import { IUserRepository } from 'src/modules/user/domain/i-user.repository';
 import { MessageSentEvent } from 'src/modules/message/domain/message-sent.event';
 import { IPageRepository } from 'src/modules/message/domain/i-page.repository';
 import { ConversationCreatedEvent } from 'src/modules/conversation/domain/conversation-created.event';
+import { ConversationReadEvent } from 'src/modules/conversation/domain/conversation-read.event';
 import { ConversationDeletedEvent } from 'src/modules/conversation/domain/conversation-deleted.event';
 import { FriendRequestSentEvent } from 'src/modules/friendship/domain/friend-request-sent.event';
 import { FriendshipAcceptedEvent } from 'src/modules/friendship/domain/friendship-accepted.event';
@@ -127,6 +128,14 @@ export class DomainEventsBridge {
         err,
       );
     }
+  }
+
+  @OnEvent('conversation.read')
+  onConversationRead(event: ConversationReadEvent): void {
+    this.gateway.emitConversationRead(event.userId, {
+      conversationId: event.conversationId,
+      readAt: event.readAt.toISOString(),
+    });
   }
 
   @OnEvent('conversation.deleted')

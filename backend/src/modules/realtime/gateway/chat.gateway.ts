@@ -22,6 +22,7 @@ import {
 import { PresenceService } from '../presence/presence.service';
 import {
   ConversationCreatedPayload,
+  ConversationReadPayload,
   FriendshipAcceptedPayload,
   FriendshipRequestReceivedPayload,
   MessageNewPayload,
@@ -242,6 +243,10 @@ export class ChatGateway
     this.server
       .in(convRoom(conversationId))
       .socketsLeave(convRoom(conversationId));
+  }
+
+  emitConversationRead(userId: string, payload: ConversationReadPayload): void {
+    this.server.to(userRoom(userId)).emit(WS_EVENTS.CONVERSATION_READ, payload);
   }
 
   emitReactionUpdated(

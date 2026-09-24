@@ -23,6 +23,10 @@ class ParticipantSubdoc {
 
   @Prop({ default: false })
   declare isActive: boolean;
+
+  // Mốc đã đọc để đếm tin chưa đọc. Thiếu ở dữ liệu cũ (khởi tạo lười).
+  @Prop()
+  declare lastReadAt?: Date;
 }
 
 @Schema({ _id: false })

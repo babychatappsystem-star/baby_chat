@@ -53,6 +53,43 @@ export class ConversationRepository implements IConversationRepository {
     return ConversationMapper.toDomain(updated);
   }
 
+  // $max: request tới muộn không kéo mốc đã đọc lùi lại.
+  async markRead(
+    conversationId: string,
+    userId: string,
+    at: Date,
+  ): Promise<void> {
+    await this.convModel.updateOne(
+      { _id: conversationId },
+      { $max: { 'participants.$[p].lastReadAt': at } },
+      { arrayFilters: [{ 'p.userId': new mongoose.Types.ObjectId(userId) }] },
+    );
+  }
+
+  async initLastReadAt(
+    conversationIds: string[],
+    userId: string,
+    at: Date,
+  ): Promise<void> {
+    if (conversationIds.length === 0) return;
+    await this.convModel.updateMany(
+      {
+        _id: {
+          $in: conversationIds.map((id) => new mongoose.Types.ObjectId(id)),
+        },
+      },
+      { $set: { 'participants.$[p].lastReadAt': at } },
+      {
+        arrayFilters: [
+          {
+            'p.userId': new mongoose.Types.ObjectId(userId),
+            'p.lastReadAt': { $exists: false },
+          },
+        ],
+      },
+    );
+  }
+
   // Set deletedAt = now. Idempotent — update lại không sao.
   async softDelete(id: string): Promise<void> {
     await this.convModel.updateOne(

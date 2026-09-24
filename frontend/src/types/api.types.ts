@@ -69,6 +69,7 @@ export interface ConversationDTO {
   lastMessage?: string;
   lastMessageType?: 'text' | 'image' | 'sticker';
   lastMessageAt?: string;
+  unreadCount?: number;
 }
 
 // GET /conversations/:id/pages — danh sách các trang tin nhắn.

@@ -7,9 +7,16 @@ export const WS_EVENTS = {
   FRIENDSHIP_ACCEPTED: 'friendship.accepted',
   CONVERSATION_CREATED: 'conversation.created',
   REACTION_UPDATED: 'reaction.updated',
+  CONVERSATION_READ: 'conversation.read',
   PRESENCE_ONLINE: 'presence.online',
   PRESENCE_OFFLINE: 'presence.offline',
 } as const;
+
+// Chính mình vừa đọc hội thoại trên thiết bị khác → xoá badge chưa đọc ở đây.
+export interface ConversationReadPayload {
+  conversationId: string;
+  readAt: string;
+}
 
 export interface MessageNewPayload {
   conversationId: string;
@@ -67,6 +74,7 @@ export interface ServerToClientEvents {
   'friendship.accepted': (p: FriendshipAcceptedPayload) => void;
   'conversation.created': (p: ConversationCreatedPayload) => void;
   'reaction.updated': (p: ReactionUpdatedPayload) => void;
+  'conversation.read': (p: ConversationReadPayload) => void;
   'presence.online': (p: PresenceOnlinePayload) => void;
   'presence.offline': (p: PresenceOfflinePayload) => void;
 }

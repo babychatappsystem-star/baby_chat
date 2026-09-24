@@ -7,6 +7,7 @@ export const WS_EVENTS = {
   FRIENDSHIP_ACCEPTED: 'friendship.accepted',
   CONVERSATION_CREATED: 'conversation.created',
   REACTION_UPDATED: 'reaction.updated',
+  CONVERSATION_READ: 'conversation.read',
   PRESENCE_ONLINE: 'presence.online',
   PRESENCE_OFFLINE: 'presence.offline',
 } as const;
@@ -66,6 +67,12 @@ export interface ReactionUpdatedPayload {
   emoji: string;
   userId: string;
   action: 'add' | 'remove';
+}
+
+// Chính user vừa đọc hội thoại trên 1 thiết bị → các thiết bị khác xoá badge chưa đọc.
+export interface ConversationReadPayload {
+  conversationId: string;
+  readAt: string; // ISO 8601
 }
 
 // user vừa online (không còn offline).

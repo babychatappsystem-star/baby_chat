@@ -30,6 +30,7 @@ import {
   GetMessagesByPageUseCase,
   GetPageListUseCase,
 } from 'src/modules/conversation/application/use-cases/get-conversation.usecase';
+import { MarkConversationReadUseCase } from 'src/modules/conversation/application/use-cases/mark-conversation-read.usecase';
 import { AddReactionUseCase } from 'src/modules/conversation/application/use-cases/add-reaction.usecase';
 import { RemoveReactionUseCase } from 'src/modules/conversation/application/use-cases/remove-reaction.usecase';
 import { FileUrlResolver } from 'src/modules/file/application/file-url-resolver.service';
@@ -63,6 +64,7 @@ export class ConversationsController {
     private readonly getPageListUseCase: GetPageListUseCase,
     private readonly addReactionUseCase: AddReactionUseCase,
     private readonly removeReactionUseCase: RemoveReactionUseCase,
+    private readonly markConversationReadUseCase: MarkConversationReadUseCase,
     private readonly fileUrlResolver: FileUrlResolver,
     @Inject(IUserRepository) private readonly userRepository: IUserRepository,
   ) {}
@@ -130,6 +132,7 @@ export class ConversationsController {
         dto.lastMessageType = r.lastMessage.type;
         dto.lastMessageAt = r.lastMessage.createdAt;
       }
+      dto.unreadCount = r.unreadCount;
       return dto;
     });
   }
@@ -315,6 +318,22 @@ export class ConversationsController {
     });
     const avatarUrl = await this.resolveAvatarUrl(result.avatarFileId);
     return ConversationResponseMapper.toConversationDto(result, avatarUrl);
+  }
+
+  @ApiOperation({ summary: 'Đánh dấu đã đọc hết hội thoại' })
+  @ApiResponse({ status: 204 })
+  @ApiResponse({
+    status: 403,
+    description: 'Không phải participant của conversation',
+  })
+  @HttpCode(204)
+  // POST /conversations/:id/read — đẩy mốc đã đọc của user hiện tại lên bây giờ.
+  @Post(':id/read')
+  async markRead(
+    @Param('id') conversationId: string,
+    @CurrentUser('userId') userId: string,
+  ): Promise<void> {
+    await this.markConversationReadUseCase.execute({ conversationId, userId });
   }
 
   @ApiOperation({ summary: 'Xóa hội thoại (soft delete)' })

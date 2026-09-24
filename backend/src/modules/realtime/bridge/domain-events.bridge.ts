@@ -58,7 +58,7 @@ export class DomainEventsBridge {
     } catch (err) {
       this.logger.error(
         `Failed to broadcast message.new for ${event.messageId}`,
-        err as any,
+        err,
       );
     }
   }
@@ -76,7 +76,7 @@ export class DomainEventsBridge {
     } catch (err) {
       this.logger.error(
         `Failed to broadcast friendship.request_received for ${event.friendshipId}`,
-        err as any,
+        err,
       );
     }
   }
@@ -94,7 +94,7 @@ export class DomainEventsBridge {
     } catch (err) {
       this.logger.error(
         `Failed to broadcast friendship.accepted for ${event.friendshipId}`,
-        err as any,
+        err,
       );
     }
   }
@@ -124,7 +124,7 @@ export class DomainEventsBridge {
     } catch (err) {
       this.logger.error(
         `Failed to broadcast conversation.created for ${event.conversationId}`,
-        err as any,
+        err,
       );
     }
   }
@@ -135,7 +135,7 @@ export class DomainEventsBridge {
   }
 
   @OnEvent('reaction.updated')
-  async onReactionUpdated(event: ReactionUpdatedEvent): Promise<void> {
+  onReactionUpdated(event: ReactionUpdatedEvent): void {
     try {
       this.gateway.emitReactionUpdated(event.conversationId, {
         messageId: event.messageId,
@@ -147,7 +147,7 @@ export class DomainEventsBridge {
     } catch (err) {
       this.logger.error(
         `Failed to broadcast reaction.updated for message ${event.messageId}`,
-        err as any,
+        err,
       );
     }
   }

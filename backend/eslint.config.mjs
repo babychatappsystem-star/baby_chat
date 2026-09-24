@@ -31,4 +31,18 @@ export default tseslint.config(
       '@typescript-eslint/no-unsafe-argument': 'warn',
     },
   },
+  {
+    // Jest mock/matcher (jest.fn, expect.any, mock.calls) trả về any — nới các luật
+    // type-safety cho file test, giữ nguyên cho code ứng dụng.
+    files: ['**/*.spec.ts', 'test/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/require-await': 'off',
+      '@typescript-eslint/unbound-method': 'off',
+    },
+  },
 );

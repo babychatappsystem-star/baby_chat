@@ -6,7 +6,7 @@ import {
   Post,
   Get,
   UseGuards,
-  Request,
+  Req,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -14,6 +14,7 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import type { Request as ExpressRequest } from 'express';
 import { JwtService } from '@nestjs/jwt';
 import { SkipThrottle, Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -152,13 +153,13 @@ export class AuthController {
   @SkipThrottle()
   @Post('logout')
   async logout(
-    @Request() req,
+    @Req() req: ExpressRequest,
     @Body() dto: RefreshTokenDto,
   ): Promise<LogoutResponseDto> {
-    const authHeader = req.headers?.authorization as string | undefined;
+    const authHeader = req.headers.authorization;
     const token = authHeader?.split(' ')[1];
     if (token) {
-      const decoded = this.jwtService.decode(token) as { exp?: number } | null;
+      const decoded = this.jwtService.decode<{ exp?: number } | null>(token);
       const expiresAtMs = decoded?.exp
         ? decoded.exp * 1000
         : Date.now() + 24 * 60 * 60 * 1000;

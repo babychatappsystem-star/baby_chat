@@ -182,7 +182,7 @@ export class ConversationsController {
     @CurrentUser('userId') userId: string,
   ): Promise<ConversationResponseDto> {
     const result = await this.createConversationUseCase.execute({
-      type: dto.type as any,
+      type: dto.type,
       createdByUserId: userId,
       participantUserIds: dto.participants.map((p) => p.userId.toString()),
       name: dto.name,

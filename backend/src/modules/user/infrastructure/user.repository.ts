@@ -5,6 +5,7 @@ import { IUserRepository } from 'src/modules/user/domain/i-user.repository';
 import { UserEntity } from 'src/modules/user/domain/user.entity';
 import { UserDocument } from './user.schema';
 import { UserMapper } from './user.mapper';
+import { errorCode } from 'src/shared/utils/error-code';
 
 // Implementation của IUserRepository dùng Mongoose.
 // Mọi return đều đi qua UserMapper để domain layer không phụ thuộc Mongoose document.
@@ -68,8 +69,8 @@ export class UserRepository implements IUserRepository {
         { $set: { friendCode: code } },
       );
       return result.matchedCount > 0;
-    } catch (err: any) {
-      if (err?.code === 11000) return false;
+    } catch (err) {
+      if (errorCode(err) === 11000) return false;
       throw err;
     }
   }
@@ -123,13 +124,11 @@ export class UserRepository implements IUserRepository {
     transitionTime: number,
     emojis?: string[],
   ): Promise<void> {
-    const updateDoc: any = {
+    const updateDoc = {
       expressiveChatThresholds: thresholds,
       expressiveChatTransitionTime: transitionTime,
+      ...(emojis ? { expressiveChatEmojis: emojis } : {}),
     };
-    if (emojis) {
-      updateDoc.expressiveChatEmojis = emojis;
-    }
     await this.userModel.updateOne({ _id: userId }, { $set: updateDoc });
   }
 

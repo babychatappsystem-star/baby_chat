@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { BlacklistedTokenDocument } from './blacklisted-token.schema';
+import { errorCode } from 'src/shared/utils/error-code';
 
 @Injectable()
 export class TokenBlacklistService {
@@ -18,10 +19,12 @@ export class TokenBlacklistService {
         token,
         expiresAt: new Date(expiresAtMs),
       });
-    } catch (err: any) {
+    } catch (err) {
       // Ignore duplicate key error (token already blacklisted)
-      if (err?.code !== 11000) {
-        this.logger.error(`Failed to blacklist token: ${err.message}`);
+      if (errorCode(err) !== 11000) {
+        this.logger.error(
+          `Failed to blacklist token: ${(err as Error).message}`,
+        );
       }
     }
   }

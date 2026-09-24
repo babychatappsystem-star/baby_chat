@@ -67,7 +67,11 @@ export class ChatGateway
 
   // Gắn middleware verify JWT trước khi accept connection.
   afterInit(server: Server) {
-    server.use(createWsJwtMiddleware(this.jwtService, this.tokenBlacklist));
+    const verifyJwt = createWsJwtMiddleware(
+      this.jwtService,
+      this.tokenBlacklist,
+    );
+    server.use((socket, next) => void verifyJwt(socket, next));
     this.logger.log('ChatGateway initialized with JWT middleware');
   }
 
@@ -93,10 +97,7 @@ export class ChatGateway
         `User ${user.userId} connected (${socket.id}), joined ${conversations.length} conversations`,
       );
     } catch (err) {
-      this.logger.error(
-        `Failed to load conversations for ${user.userId}`,
-        err as any,
-      );
+      this.logger.error(`Failed to load conversations for ${user.userId}`, err);
     }
 
     // Presence: ghi nhận kết nối, broadcast nếu vừa online
@@ -179,12 +180,10 @@ export class ChatGateway
     const friendIds = await this.friendshipRepository.getFriendIds(userId);
     const lastSeenAtStr = lastSeenAt.toISOString();
     for (const fid of friendIds) {
-      this.server
-        .to(userRoom(fid))
-        .emit(WS_EVENTS.PRESENCE_OFFLINE, {
-          userId,
-          lastSeenAt: lastSeenAtStr,
-        });
+      this.server.to(userRoom(fid)).emit(WS_EVENTS.PRESENCE_OFFLINE, {
+        userId,
+        lastSeenAt: lastSeenAtStr,
+      });
     }
   }
 
@@ -230,7 +229,7 @@ export class ChatGateway
     for (const uid of participantUserIds) {
       const sockets = await this.server.in(userRoom(uid)).fetchSockets();
       for (const s of sockets) {
-        await s.join(convRoom(payload.conversationId));
+        s.join(convRoom(payload.conversationId));
       }
       this.server
         .to(userRoom(uid))

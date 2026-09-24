@@ -9,6 +9,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import type { ConversationType } from 'src/modules/conversation/domain/conversation.entity';
 
 class ParticipantInputDto {
   @ApiProperty({ example: '64a1b2c3d4e5f6a7b8c9d0e1' })
@@ -20,7 +21,7 @@ export class CreateConvDto {
   @ApiProperty({ enum: ['direct', 'group', 'channel'], example: 'direct' })
   @IsString()
   @IsIn(['direct', 'group', 'channel'])
-  type: string;
+  type: ConversationType;
 
   @ApiPropertyOptional({ example: 'My Group' })
   @IsString()

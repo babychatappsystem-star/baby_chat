@@ -29,9 +29,7 @@ export class GetConversationsByUserUseCase {
     @Inject(IPageRepository) private readonly pageRepository: IPageRepository,
   ) {}
 
-  async execute(
-    userId: string,
-  ): Promise<
+  async execute(userId: string): Promise<
     Array<{
       conversation: ConversationEntity;
       lastMessage: MessageEntity | null;

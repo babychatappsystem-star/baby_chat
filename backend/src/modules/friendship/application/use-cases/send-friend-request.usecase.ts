@@ -1,7 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { IFriendshipRepository } from 'src/modules/friendship/domain/i-friendship.repository';
 import { IUserRepository } from 'src/modules/user/domain/i-user.repository';
-import { FriendshipEntity } from 'src/modules/friendship/domain/friendship.entity';
+import {
+  FriendshipEntity,
+  FriendshipStatus,
+} from 'src/modules/friendship/domain/friendship.entity';
 import { FriendRequestSentEvent } from 'src/modules/friendship/domain/friend-request-sent.event';
 import { EVENT_BUS, IEventBus } from 'src/shared/events/event-bus';
 import {
@@ -41,7 +44,8 @@ export class SendFriendRequestUseCase {
       cmd.recipientId,
     );
     if (existing) {
-      if (existing.status === 'blocked') throw new FriendshipBlockedException();
+      if (existing.status === FriendshipStatus.Blocked)
+        throw new FriendshipBlockedException();
       throw new FriendshipAlreadyExistsException();
     }
 

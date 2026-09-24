@@ -26,7 +26,7 @@ export class AutoCreateDirectConversationListener {
       // Không throw để tránh phá luồng accept; chỉ log lại để debug.
       this.logger.error(
         `Failed to auto-create direct conversation for friendship ${event.friendshipId}`,
-        err as any,
+        err,
       );
     }
   }

@@ -77,6 +77,10 @@ export class ConversationDocument extends Document {
   // Query mặc định filter { deletedAt: null } để ẩn khỏi list (xem repository).
   @Prop({ type: Date, required: false, default: null })
   declare deletedAt?: Date | null;
+
+  // Do `timestamps: true` sinh ra — chỉ khai báo kiểu.
+  declare createdAt: Date;
+  declare updatedAt: Date;
 }
 
 export const ConversationSchema =

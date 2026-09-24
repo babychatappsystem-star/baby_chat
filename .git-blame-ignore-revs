@@ -1,0 +1,4 @@
+# Commit chỉ đổi format — git blame bỏ qua.
+# Bật trên máy: git config blame.ignoreRevsFile .git-blame-ignore-revs
+# style(backend): format with prettier
+c947b6ff33c5cb1d2bd43fab4238eb6534cd6e99

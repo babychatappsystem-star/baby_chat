@@ -8,6 +8,7 @@ import { MessageEntity } from 'src/modules/message/domain/message.entity';
 import { DuplicatePageNumberError } from 'src/modules/message/domain/errors';
 import { PageDocument } from './page.schema';
 import { PageMapper } from './page.mapper';
+import { errorCode } from 'src/shared/utils/error-code';
 
 // Implementation của IPageRepository dùng Mongoose.
 // Page là bucket chứa tối đa pageSize tin nhắn — giảm số document trong DB.
@@ -53,8 +54,8 @@ export class PageRepository implements IPageRepository {
     try {
       const created = await this.pageModel.create(data);
       return PageMapper.toDomain(created);
-    } catch (err: any) {
-      if (err?.code === 11000) {
+    } catch (err) {
+      if (errorCode(err) === 11000) {
         throw new DuplicatePageNumberError(
           entity.conversationId,
           entity.pageNumber,

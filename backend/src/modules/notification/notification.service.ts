@@ -78,8 +78,9 @@ export class NotificationService implements OnModuleInit {
             this.logger.log(
               `Successfully sent Web Push to user ${participantId}`,
             );
-          } catch (error: any) {
-            if (error.statusCode === 404 || error.statusCode === 410) {
+          } catch (error) {
+            const statusCode = (error as { statusCode?: number }).statusCode;
+            if (statusCode === 404 || statusCode === 410) {
               this.logger.debug(
                 `Subscription expired or removed for user ${participantId}. Lazy cleanup.`,
               );

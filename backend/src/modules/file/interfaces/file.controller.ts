@@ -31,7 +31,6 @@ import {
 import { UploadImageUseCase } from 'src/modules/file/application/use-cases/upload-image.usecase';
 import { GetFileUseCase } from 'src/modules/file/application/use-cases/get-file.usecase';
 import { DeleteFileUseCase } from 'src/modules/file/application/use-cases/delete-file.usecase';
-import { FileCategory } from 'src/modules/file/domain/file.entity';
 import { UploadFileDto } from './dto/upload-file.dto';
 import { FileResponseDto } from './dto/file-response.dto';
 
@@ -123,7 +122,7 @@ export class FileController {
 
     const result = await this.uploadImageUseCase.execute({
       ownerId: userId,
-      category: (dto.category ?? 'other') as FileCategory,
+      category: dto.category ?? 'other',
       originalName: file.originalname,
       buffer: file.buffer,
     });

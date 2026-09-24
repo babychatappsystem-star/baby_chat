@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import {
   ConversationEntity,
   ConversationSettings,
+  ConversationType,
 } from 'src/modules/conversation/domain/conversation.entity';
 import {
   ParticipantEntity,
@@ -38,8 +39,8 @@ export class ConversationMapper {
     };
 
     return ConversationEntity.reconstitute({
-      id: (doc._id as any).toString(),
-      type: doc.type as any,
+      id: String(doc._id),
+      type: doc.type as ConversationType,
       name: doc.name,
       description: doc.description,
       avatar: doc.avatar,
@@ -47,8 +48,8 @@ export class ConversationMapper {
       createdBy: doc.createdBy?.toString(),
       participants,
       settings,
-      createdAt: (doc as any).createdAt,
-      updatedAt: (doc as any).updatedAt,
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
       deletedAt: doc.deletedAt,
     });
   }

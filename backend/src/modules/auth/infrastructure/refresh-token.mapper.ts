@@ -5,7 +5,7 @@ import { RefreshTokenDocument } from './refresh-token.schema';
 export class RefreshTokenMapper {
   static toDomain(doc: RefreshTokenDocument): RefreshTokenEntity {
     return RefreshTokenEntity.reconstitute({
-      id: (doc._id as any).toString(),
+      id: String(doc._id),
       userId: doc.userId.toString(),
       tokenHash: doc.tokenHash,
       expiresAt: doc.expiresAt,

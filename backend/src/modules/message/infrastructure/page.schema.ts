@@ -93,6 +93,10 @@ export class PageDocument extends Document {
 
   @Prop({ type: [MessageSubdoc], default: [] })
   declare messages: MessageSubdoc[];
+
+  // Do `timestamps: true` sinh ra — chỉ khai báo kiểu.
+  declare createdAt: Date;
+  declare updatedAt: Date;
 }
 
 export const PageSchema = SchemaFactory.createForClass(PageDocument);

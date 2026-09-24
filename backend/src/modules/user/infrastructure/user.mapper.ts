@@ -7,7 +7,7 @@ export class UserMapper {
   // Document → Entity. Convert ObjectId thành string, đẩy hết field qua reconstitute.
   static toDomain(doc: UserDocument): UserEntity {
     return UserEntity.reconstitute({
-      id: (doc._id as any).toString(),
+      id: String(doc._id),
       username: doc.username,
       email: doc.email,
       password: doc.password,

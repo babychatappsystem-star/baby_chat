@@ -26,7 +26,7 @@ export class StickerRepository implements IStickerRepository {
 
   async getActivePacks(): Promise<StickerPack[]> {
     const docs = await this.stickerPackModel.find({ isActive: true }).exec();
-    return docs.map(this.toDomain);
+    return docs.map((doc) => this.toDomain(doc));
   }
 
   async findItemById(stickerId: string): Promise<StickerItem | null> {

@@ -6,6 +6,7 @@ import { Logger, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { join } from 'path';
 import * as morgan from 'morgan';
+import { errorCode } from 'src/shared/utils/error-code';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -46,8 +47,8 @@ async function bootstrap() {
 
   try {
     await app.listen(port);
-  } catch (error: any) {
-    if (error.code === 'EADDRINUSE') {
+  } catch (error) {
+    if (errorCode(error) === 'EADDRINUSE') {
       const logger = new Logger('Bootstrap');
       logger.error(
         `❌ Cổng (Port) ${port} đang bị chiếm dụng bởi một tiến trình khác!`,
@@ -66,4 +67,4 @@ async function bootstrap() {
   logger.log(`Application is running on: http://localhost:${port}`);
   logger.log(`Swagger is running on: http://localhost:${port}/${swaggerPath}`);
 }
-bootstrap();
+void bootstrap();

@@ -5,7 +5,7 @@ import { FileDocument } from './file.schema';
 export class FileMapper {
   static toDomain(doc: FileDocument): FileEntity {
     return FileEntity.reconstitute({
-      id: (doc._id as any).toString(),
+      id: String(doc._id),
       ownerId: doc.ownerId.toString(),
       category: doc.category as FileCategory,
       originalName: doc.originalName,
@@ -16,7 +16,7 @@ export class FileMapper {
       thumbnailUrl: doc.thumbnailUrl,
       width: doc.width,
       height: doc.height,
-      createdAt: (doc as any).createdAt,
+      createdAt: doc.createdAt,
     });
   }
 

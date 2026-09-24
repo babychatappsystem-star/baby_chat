@@ -34,8 +34,12 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         message = exceptionResponse;
         error = exception.constructor.name;
       } else {
-        message = (exceptionResponse as any).message || exceptionResponse;
-        error = (exceptionResponse as any).error || exception.constructor.name;
+        const body = exceptionResponse as {
+          message?: string | object;
+          error?: string;
+        };
+        message = body.message || exceptionResponse;
+        error = body.error || exception.constructor.name;
       }
     } else if (exception instanceof MongoError) {
       // Handle MongoDB errors

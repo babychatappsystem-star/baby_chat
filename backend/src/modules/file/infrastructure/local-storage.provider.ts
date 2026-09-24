@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { promises as fs } from 'fs';
 import { join } from 'path';
 import { IStorageProvider } from 'src/modules/file/domain/i-storage.provider';
+import { errorCode } from 'src/shared/utils/error-code';
 
 // Lưu file vào thư mục local (UPLOAD_DIR, default ./uploads) và serve qua static
 // route /uploads. URL trả về là relative path để FE tự ghép base URL.
@@ -35,8 +36,8 @@ export class LocalStorageProvider
   async delete(filename: string): Promise<void> {
     try {
       await fs.unlink(join(this.uploadDir, filename));
-    } catch (err: any) {
-      if (err?.code !== 'ENOENT') throw err;
+    } catch (err) {
+      if (errorCode(err) !== 'ENOENT') throw err;
     }
   }
 }

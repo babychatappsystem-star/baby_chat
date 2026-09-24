@@ -10,39 +10,6 @@ export interface DeleteUserCommand {
   roles?: string[];
 }
 
-export interface GetAllUsersQuery {
-  page?: number;
-  limit?: number;
-}
-
-export interface PaginatedUsersResult {
-  items: UserEntity[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
-
-// Lấy danh sách user có phân trang.
-@Injectable()
-export class GetAllUsersUseCase {
-  constructor(@Inject(IUserRepository) private readonly userRepository: IUserRepository) {}
-
-  async execute(query?: GetAllUsersQuery): Promise<PaginatedUsersResult> {
-    const page = Math.max(1, Number(query?.page) || 1);
-    const limit = Math.min(100, Math.max(1, Number(query?.limit) || 20));
-
-    const { items, total } = await this.userRepository.findPaginated(page, limit);
-    return {
-      items,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit) || 1,
-    };
-  }
-}
-
 // Lấy chi tiết user theo id; throw 404 nếu không tồn tại.
 @Injectable()
 export class GetUserByIdUseCase {

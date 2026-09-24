@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import apiClient from '../../api/apiClient';
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
   const base64 = (base64String + padding)
-    .replace(/\-/g, '+')
+    .replace(/-/g, '+')
     .replace(/_/g, '/');
 
   const rawData = window.atob(base64);
@@ -16,6 +16,9 @@ function urlBase64ToUint8Array(base64String: string) {
   return outputArray;
 }
 
+const sendSubscriptionToServer = (subscription: PushSubscription) =>
+  apiClient.post('/notifications/subscribe', subscription.toJSON());
+
 export const usePushNotifications = () => {
   const [isSupported, setIsSupported] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission>('default');
@@ -23,18 +26,22 @@ export const usePushNotifications = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    // Check if Push messaging is supported
-    if ('serviceWorker' in navigator && 'PushManager' in window) {
-      setIsSupported(true);
-      setPermission(Notification.permission);
-      
-      // Check if already subscribed
-      navigator.serviceWorker.ready.then((registration) => {
-        registration.pushManager.getSubscription().then((subscription) => {
-          setIsSubscribed(!!subscription);
-        });
-      });
-    }
+    if (!('serviceWorker' in navigator && 'PushManager' in window)) return;
+
+    setIsSupported(true);
+    setPermission(Notification.permission);
+
+    // Đồng bộ lại subscription sẵn có với server: server có thể đã mất bản ghi
+    // (dọn dữ liệu, đổi tài khoản trên cùng trình duyệt). Backend upsert theo endpoint.
+    navigator.serviceWorker.ready
+      .then((registration) => registration.pushManager.getSubscription())
+      .then(async (subscription) => {
+        setIsSubscribed(!!subscription);
+        if (subscription && Notification.permission === 'granted') {
+          await sendSubscriptionToServer(subscription);
+        }
+      })
+      .catch((error) => console.error('Failed to sync push subscription:', error));
   }, []);
 
   const subscribeToPush = async () => {
@@ -47,7 +54,7 @@ export const usePushNotifications = () => {
 
       if (perm === 'granted') {
         const registration = await navigator.serviceWorker.register('/sw.js');
-        
+
         const publicVapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
         if (!publicVapidKey) {
           throw new Error('VITE_VAPID_PUBLIC_KEY is not set');
@@ -58,16 +65,7 @@ export const usePushNotifications = () => {
           applicationServerKey: urlBase64ToUint8Array(publicVapidKey),
         });
 
-        // Send subscription to backend
-        const token = localStorage.getItem('access_token');
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-        
-        await axios.post(`${API_URL}/notifications/subscribe`, subscription.toJSON(), {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-
+        await sendSubscriptionToServer(subscription);
         setIsSubscribed(true);
       }
     } catch (error) {

@@ -8,7 +8,9 @@ import { StickerController } from './interfaces/sticker.controller';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: 'StickerPack', schema: StickerPackSchema }]),
+    MongooseModule.forFeature([
+      { name: 'StickerPack', schema: StickerPackSchema },
+    ]),
   ],
   controllers: [StickerController],
   providers: [

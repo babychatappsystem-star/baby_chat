@@ -33,10 +33,16 @@ class ConvSettingSubdoc {
   @Prop({ default: true })
   declare allowInvites: boolean;
 
-  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], default: [] })
+  @Prop({
+    type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    default: [],
+  })
   declare mutedBy: mongoose.Types.ObjectId[];
 
-  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], default: [] })
+  @Prop({
+    type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    default: [],
+  })
   declare pinnedBy: mongoose.Types.ObjectId[];
 }
 
@@ -73,7 +79,8 @@ export class ConversationDocument extends Document {
   declare deletedAt?: Date | null;
 }
 
-export const ConversationSchema = SchemaFactory.createForClass(ConversationDocument);
+export const ConversationSchema =
+  SchemaFactory.createForClass(ConversationDocument);
 
 ConversationSchema.path('participants').validate(
   (value: ParticipantSubdoc[]) => value && value.length > 0,

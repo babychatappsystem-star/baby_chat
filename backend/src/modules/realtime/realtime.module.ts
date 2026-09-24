@@ -13,7 +13,14 @@ import { PresenceService } from './presence/presence.service';
 // mà không phải import RealtimeModule.
 @Global()
 @Module({
-  imports: [AuthModule, ConversationsModule, UserModule, PageModule, FileModule, FriendshipModule],
+  imports: [
+    AuthModule,
+    ConversationsModule,
+    UserModule,
+    PageModule,
+    FileModule,
+    FriendshipModule,
+  ],
   providers: [ChatGateway, DomainEventsBridge, PresenceService],
   exports: [ChatGateway, PresenceService],
 })

@@ -99,7 +99,9 @@ export class PageEntity {
   // Thêm message vào page in-memory. Nếu page đầy sau khi thêm → set endTime để đóng page.
   addMessage(props: CreateMessageProps): MessageEntity {
     if (this.isFull) {
-      throw new Error(`Page ${this.pageNumber} is full (${this.pageSize} messages)`);
+      throw new Error(
+        `Page ${this.pageNumber} is full (${this.pageSize} messages)`,
+      );
     }
 
     const message = MessageEntity.create(props);

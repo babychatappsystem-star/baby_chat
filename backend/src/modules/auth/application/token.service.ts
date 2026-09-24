@@ -75,7 +75,10 @@ export class TokenService {
 
   // Tìm document active khớp với plaintext token. Trả về entity hoặc null.
   findActiveByPlaintext(userId: string, plaintext: string) {
-    return this.refreshTokenRepository.findActiveByHash(userId, this.hashToken(plaintext));
+    return this.refreshTokenRepository.findActiveByHash(
+      userId,
+      this.hashToken(plaintext),
+    );
   }
 
   revokeById(id: string): Promise<void> {
@@ -100,7 +103,9 @@ export class TokenService {
     const raw = this.configService.get<string>(envKey) ?? fallback;
     const match = /^(\d+)\s*([smhd])$/.exec(raw.trim());
     if (!match) {
-      throw new Error(`Invalid ${envKey} value: ${raw}. Expected format like "7d", "12h", "30m".`);
+      throw new Error(
+        `Invalid ${envKey} value: ${raw}. Expected format like "7d", "12h", "30m".`,
+      );
     }
     const value = parseInt(match[1], 10);
     const unitMs: Record<string, number> = {

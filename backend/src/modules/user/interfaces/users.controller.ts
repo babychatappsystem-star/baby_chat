@@ -1,8 +1,26 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/modules/auth/interfaces/guards/jwt-auth.guard';
 import { CurrentUser } from 'src/shared/decorators/current-user.decorator';
-import { GetUserByIdUseCase, DeleteUserUseCase } from 'src/modules/user/application/use-cases/get-users.usecase';
+import {
+  GetUserByIdUseCase,
+  DeleteUserUseCase,
+} from 'src/modules/user/application/use-cases/get-users.usecase';
 import { GetOrCreateFriendCodeUseCase } from 'src/modules/user/application/use-cases/get-or-create-friend-code.usecase';
 import { RegenerateFriendCodeUseCase } from 'src/modules/user/application/use-cases/regenerate-friend-code.usecase';
 import { GetUserByFriendCodeUseCase } from 'src/modules/user/application/use-cases/get-user-by-friend-code.usecase';
@@ -15,7 +33,10 @@ import { FileUrlResolver } from 'src/modules/file/application/file-url-resolver.
 import { UpdateAvatarDto } from './dto/update-avatar.dto';
 import { UserPublicDto } from './dto/user-public.dto';
 import { FriendCodeResponseDto } from './dto/friend-code.dto';
-import { UpdatePresenceSettingsDto, FriendPresenceItemDto } from './dto/presence.dto';
+import {
+  UpdatePresenceSettingsDto,
+  FriendPresenceItemDto,
+} from './dto/presence.dto';
 import { UpdateExpressiveChatSettingsDto } from './dto/update-expressive-chat-settings.dto';
 
 // Controller cho các endpoint quản lý user. POST /users public, các endpoint khác cần JWT.
@@ -37,12 +58,16 @@ export class UsersController {
 
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Lấy friend code của user hiện tại (tự sinh nếu chưa có)' })
+  @ApiOperation({
+    summary: 'Lấy friend code của user hiện tại (tự sinh nếu chưa có)',
+  })
   @ApiResponse({ status: 200, type: FriendCodeResponseDto })
   // GET /users/me/friend-code — code dùng để người khác gửi friend request.
   // Lazy-init: nếu user chưa có code thì sinh + lưu rồi trả về.
   @Get('me/friend-code')
-  async getMyFriendCode(@CurrentUser('userId') userId: string): Promise<FriendCodeResponseDto> {
+  async getMyFriendCode(
+    @CurrentUser('userId') userId: string,
+  ): Promise<FriendCodeResponseDto> {
     const code = await this.getOrCreateFriendCodeUseCase.execute(userId);
     return { friendCode: code };
   }
@@ -53,7 +78,9 @@ export class UsersController {
   @ApiResponse({ status: 200, type: FriendCodeResponseDto })
   // POST /users/me/friend-code/regenerate — dùng khi user muốn vô hiệu code cũ (bị spam).
   @Post('me/friend-code/regenerate')
-  async regenerateMyFriendCode(@CurrentUser('userId') userId: string): Promise<FriendCodeResponseDto> {
+  async regenerateMyFriendCode(
+    @CurrentUser('userId') userId: string,
+  ): Promise<FriendCodeResponseDto> {
     const code = await this.regenerateFriendCodeUseCase.execute(userId);
     return { friendCode: code };
   }
@@ -70,14 +97,19 @@ export class UsersController {
     @CurrentUser('userId') userId: string,
     @Body() dto: UpdateAvatarDto,
   ): Promise<UserPublicDto> {
-    const user = await this.updateUserAvatarUseCase.execute({ userId, fileId: dto.fileId });
+    const user = await this.updateUserAvatarUseCase.execute({
+      userId,
+      fileId: dto.fileId,
+    });
     const resolved = await this.fileUrlResolver.resolve(user.avatarFileId);
     return UserPublicDto.fromEntity(user, resolved?.url, true); // Update profile của chính mình
   }
 
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Tra cứu user theo friend code (preview trước khi gửi request)' })
+  @ApiOperation({
+    summary: 'Tra cứu user theo friend code (preview trước khi gửi request)',
+  })
   @ApiResponse({ status: 200, type: UserPublicDto })
   @ApiResponse({ status: 404, description: 'Friend code không tồn tại' })
   // GET /users/by-friend-code/:code — trả thông tin public user để FE hiển thị preview
@@ -146,13 +178,20 @@ export class UsersController {
     @CurrentUser('userId') userId: string,
     @Body() dto: UpdateExpressiveChatSettingsDto,
   ): Promise<UpdateExpressiveChatSettingsDto> {
-    await this.updateExpressiveChatSettingsUseCase.execute(userId, dto.thresholds, dto.transitionTime, dto.emojis);
+    await this.updateExpressiveChatSettingsUseCase.execute(
+      userId,
+      dto.thresholds,
+      dto.transitionTime,
+      dto.emojis,
+    );
     return dto;
   }
 
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Lấy trạng thái online của tất cả bạn bè (bootstrap khi mở app)' })
+  @ApiOperation({
+    summary: 'Lấy trạng thái online của tất cả bạn bè (bootstrap khi mở app)',
+  })
   @ApiResponse({ status: 200, type: [FriendPresenceItemDto] })
   // GET /users/me/friends/presence — FE dùng để bootstrap PresenceContext khi mở app.
   @Get('me/friends/presence')

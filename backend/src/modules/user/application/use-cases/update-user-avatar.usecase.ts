@@ -26,7 +26,10 @@ export class UpdateUserAvatarUseCase {
     if (!file) throw new FileNotFoundException(cmd.fileId);
     if (!file.isOwnedBy(cmd.userId)) throw new FileAccessDeniedException();
 
-    const updated = await this.userRepository.updateAvatar(cmd.userId, cmd.fileId);
+    const updated = await this.userRepository.updateAvatar(
+      cmd.userId,
+      cmd.fileId,
+    );
     if (!updated) throw new UserNotFoundException(cmd.userId);
     return updated;
   }

@@ -13,11 +13,18 @@ export class UserPublicDto {
   @ApiPropertyOptional({ example: 'user@example.com' })
   email?: string;
 
-  @ApiPropertyOptional({ example: '/uploads/abc.webp', description: 'URL avatar (null nếu chưa đặt)' })
+  @ApiPropertyOptional({
+    example: '/uploads/abc.webp',
+    description: 'URL avatar (null nếu chưa đặt)',
+  })
   avatarUrl?: string | null;
 
   // avatarUrl resolve sẵn từ fileId (caller dùng FileUrlResolver). Mặc định null.
-  static fromEntity(entity: UserEntity, avatarUrl?: string | null, includeEmail = false): UserPublicDto {
+  static fromEntity(
+    entity: UserEntity,
+    avatarUrl?: string | null,
+    includeEmail = false,
+  ): UserPublicDto {
     const dto: UserPublicDto = {
       id: entity.id!,
       username: entity.username,

@@ -12,11 +12,15 @@ export interface UnfriendCommand {
 @Injectable()
 export class UnfriendUseCase {
   constructor(
-    @Inject(IFriendshipRepository) private readonly friendshipRepo: IFriendshipRepository,
+    @Inject(IFriendshipRepository)
+    private readonly friendshipRepo: IFriendshipRepository,
   ) {}
 
   async execute(cmd: UnfriendCommand): Promise<void> {
-    const friendship = await this.friendshipRepo.findBetween(cmd.userId, cmd.friendUserId);
+    const friendship = await this.friendshipRepo.findBetween(
+      cmd.userId,
+      cmd.friendUserId,
+    );
     if (!friendship || friendship.status !== FriendshipStatus.Accepted) {
       throw new FriendshipNotFoundException();
     }

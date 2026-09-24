@@ -1,7 +1,10 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { FileController } from './file.controller';
-import { FileDocument, FileSchema } from 'src/modules/file/infrastructure/file.schema';
+import {
+  FileDocument,
+  FileSchema,
+} from 'src/modules/file/infrastructure/file.schema';
 import { FileRepository } from 'src/modules/file/infrastructure/file.repository';
 import { IFileRepository } from 'src/modules/file/domain/i-file.repository';
 import { IStorageProvider } from 'src/modules/file/domain/i-storage.provider';
@@ -16,7 +19,9 @@ import { FileUrlResolver } from 'src/modules/file/application/file-url-resolver.
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: FileDocument.name, schema: FileSchema }]),
+    MongooseModule.forFeature([
+      { name: FileDocument.name, schema: FileSchema },
+    ]),
   ],
   controllers: [FileController],
   providers: [
@@ -24,9 +29,10 @@ import { FileUrlResolver } from 'src/modules/file/application/file-url-resolver.
     {
       provide: IStorageProvider,
       useFactory: (configService: ConfigService) => {
-        const storageType = configService.get<string>('STORAGE_TYPE') || 'local';
-        return storageType === 'cloudinary' 
-          ? new CloudinaryStorageProvider(configService) 
+        const storageType =
+          configService.get<string>('STORAGE_TYPE') || 'local';
+        return storageType === 'cloudinary'
+          ? new CloudinaryStorageProvider(configService)
           : new LocalStorageProvider(configService);
       },
       inject: [ConfigService],

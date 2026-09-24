@@ -1,6 +1,12 @@
 import mongoose from 'mongoose';
-import { ConversationEntity, ConversationSettings } from 'src/modules/conversation/domain/conversation.entity';
-import { ParticipantEntity, ParticipantRole } from 'src/modules/conversation/domain/participant.entity';
+import {
+  ConversationEntity,
+  ConversationSettings,
+} from 'src/modules/conversation/domain/conversation.entity';
+import {
+  ParticipantEntity,
+  ParticipantRole,
+} from 'src/modules/conversation/domain/participant.entity';
 import { ConversationDocument } from './conversation.schema';
 
 // Helper convert string id sang ObjectId — bắt buộc khi lưu để các query

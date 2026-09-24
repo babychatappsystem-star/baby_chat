@@ -9,7 +9,8 @@ export class StickerItemSubdoc {
   @Prop({ required: true })
   url: string;
 }
-export const StickerItemSchema = SchemaFactory.createForClass(StickerItemSubdoc);
+export const StickerItemSchema =
+  SchemaFactory.createForClass(StickerItemSubdoc);
 
 @Schema({ collection: 'sticker_packs', timestamps: true })
 export class StickerPackDocument extends Document {
@@ -25,4 +26,5 @@ export class StickerPackDocument extends Document {
   @Prop({ type: [StickerItemSchema], default: [] })
   items: StickerItemSubdoc[];
 }
-export const StickerPackSchema = SchemaFactory.createForClass(StickerPackDocument);
+export const StickerPackSchema =
+  SchemaFactory.createForClass(StickerPackDocument);

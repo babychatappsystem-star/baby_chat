@@ -14,7 +14,8 @@ export interface FriendPresenceDto {
 export class GetFriendsPresenceUseCase {
   constructor(
     @Inject(IUserRepository) private readonly userRepository: IUserRepository,
-    @Inject(IFriendshipRepository) private readonly friendshipRepository: IFriendshipRepository,
+    @Inject(IFriendshipRepository)
+    private readonly friendshipRepository: IFriendshipRepository,
     private readonly presenceService: PresenceService,
   ) {}
 

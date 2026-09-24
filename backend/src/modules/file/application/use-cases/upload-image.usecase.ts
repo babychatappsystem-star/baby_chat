@@ -23,7 +23,10 @@ export class UploadImageUseCase {
   ) {}
 
   async execute(cmd: UploadImageCommand): Promise<FileEntity> {
-    const processed = await this.imageProcessor.process(cmd.buffer, cmd.category);
+    const processed = await this.imageProcessor.process(
+      cmd.buffer,
+      cmd.category,
+    );
 
     const id = randomUUID();
     const filename = `${id}.webp`;

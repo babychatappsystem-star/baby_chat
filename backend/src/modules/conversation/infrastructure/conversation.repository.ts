@@ -18,14 +18,19 @@ export class ConversationRepository implements IConversationRepository {
   // Lấy conversation theo id, null nếu không tồn tại hoặc đã soft-deleted.
   // { deletedAt: { $eq: null } } match cả document không có field (data cũ) lẫn null.
   async findById(id: string): Promise<ConversationEntity | null> {
-    const doc = await this.convModel.findOne({ _id: id, deletedAt: { $eq: null } });
+    const doc = await this.convModel.findOne({
+      _id: id,
+      deletedAt: { $eq: null },
+    });
     return doc ? ConversationMapper.toDomain(doc) : null;
   }
 
   // Tìm tất cả conversation mà user tham gia, bỏ qua document đã soft-deleted.
   async findByUserId(userId: string): Promise<ConversationEntity[]> {
     const docs = await this.convModel.find({
-      participants: { $elemMatch: { userId: new mongoose.Types.ObjectId(userId) } },
+      participants: {
+        $elemMatch: { userId: new mongoose.Types.ObjectId(userId) },
+      },
       deletedAt: { $eq: null },
     });
     return docs.map((doc) => ConversationMapper.toDomain(doc));
@@ -41,13 +46,18 @@ export class ConversationRepository implements IConversationRepository {
   // Update toàn bộ document theo id (overwrite các field từ entity).
   async update(entity: ConversationEntity): Promise<ConversationEntity> {
     const data = ConversationMapper.toPersistence(entity);
-    const updated = await this.convModel.findByIdAndUpdate(entity.id, data, { new: true });
+    const updated = await this.convModel.findByIdAndUpdate(entity.id, data, {
+      new: true,
+    });
     if (!updated) throw new Error(`Conversation ${entity.id} not found`);
     return ConversationMapper.toDomain(updated);
   }
 
   // Set deletedAt = now. Idempotent — update lại không sao.
   async softDelete(id: string): Promise<void> {
-    await this.convModel.updateOne({ _id: id }, { $set: { deletedAt: new Date() } });
+    await this.convModel.updateOne(
+      { _id: id },
+      { $set: { deletedAt: new Date() } },
+    );
   }
 }

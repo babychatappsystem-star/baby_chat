@@ -1,7 +1,10 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { FriendshipController } from './friendship.controller';
-import { FriendshipDocument, FriendshipSchema } from 'src/modules/friendship/infrastructure/friendship.schema';
+import {
+  FriendshipDocument,
+  FriendshipSchema,
+} from 'src/modules/friendship/infrastructure/friendship.schema';
 import { FriendshipRepository } from 'src/modules/friendship/infrastructure/friendship.repository';
 import { IFriendshipRepository } from 'src/modules/friendship/domain/i-friendship.repository';
 import { UserModule } from 'src/modules/user/interfaces/users.module';
@@ -24,7 +27,9 @@ import { AutoCreateDirectConversationListener } from 'src/modules/friendship/app
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: FriendshipDocument.name, schema: FriendshipSchema }]),
+    MongooseModule.forFeature([
+      { name: FriendshipDocument.name, schema: FriendshipSchema },
+    ]),
     forwardRef(() => UserModule),
     forwardRef(() => ConversationsModule),
     FileModule,

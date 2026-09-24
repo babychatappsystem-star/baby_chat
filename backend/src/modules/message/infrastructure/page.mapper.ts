@@ -61,7 +61,9 @@ export class PageMapper {
         fileId: m.fileId,
         replyId: m.replyId ? toObjectId(m.replyId) : null,
         replySnippet: m.replySnippet,
-        replySenderId: m.replySenderId ? toObjectId(m.replySenderId) : undefined,
+        replySenderId: m.replySenderId
+          ? toObjectId(m.replySenderId)
+          : undefined,
         stickerId: m.stickerId ? toObjectId(m.stickerId) : undefined,
         stickerUrl: m.stickerUrl,
         reactions: m.reactions.map((r) => ({

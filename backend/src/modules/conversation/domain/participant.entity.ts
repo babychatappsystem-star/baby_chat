@@ -50,7 +50,9 @@ export class ParticipantEntity {
   static create(props: CreateParticipantProps): ParticipantEntity {
     const validRoles: ParticipantRole[] = ['admin', 'member', 'moderator'];
     if (!validRoles.includes(props.role)) {
-      throw new DomainError(`Invalid role: ${props.role}. Must be one of ${validRoles.join(', ')}`);
+      throw new DomainError(
+        `Invalid role: ${props.role}. Must be one of ${validRoles.join(', ')}`,
+      );
     }
     if (!props.username || props.username.trim().length === 0) {
       throw new DomainError('Username is required');

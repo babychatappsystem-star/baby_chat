@@ -1,5 +1,8 @@
 import mongoose from 'mongoose';
-import { FriendshipEntity, FriendshipStatus } from 'src/modules/friendship/domain/friendship.entity';
+import {
+  FriendshipEntity,
+  FriendshipStatus,
+} from 'src/modules/friendship/domain/friendship.entity';
 import { FriendshipDocument } from './friendship.schema';
 
 const toObjectId = (id: string) => new mongoose.Types.ObjectId(id);

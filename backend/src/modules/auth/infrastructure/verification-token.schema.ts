@@ -14,4 +14,5 @@ export class VerificationToken extends Document {
   createdAt: Date;
 }
 
-export const VerificationTokenSchema = SchemaFactory.createForClass(VerificationToken);
+export const VerificationTokenSchema =
+  SchemaFactory.createForClass(VerificationToken);

@@ -12,7 +12,10 @@ export class InvalidMessageException extends HttpException {
 export class StickerNotFoundException extends HttpException {
   constructor(id?: string) {
     const message = id ? `Sticker '${id}' not found` : 'Sticker not found';
-    super({ error: 'StickerNotFound', message, statusCode: HttpStatus.NOT_FOUND }, HttpStatus.NOT_FOUND);
+    super(
+      { error: 'StickerNotFound', message, statusCode: HttpStatus.NOT_FOUND },
+      HttpStatus.NOT_FOUND,
+    );
   }
 }
 
@@ -21,7 +24,8 @@ export class StickerNotAllowedForMessageTypeException extends HttpException {
     super(
       {
         error: 'StickerNotAllowedForMessageType',
-        message: "stickerId is only allowed for sticker messages (type='sticker')",
+        message:
+          "stickerId is only allowed for sticker messages (type='sticker')",
         statusCode: HttpStatus.BAD_REQUEST,
       },
       HttpStatus.BAD_REQUEST,

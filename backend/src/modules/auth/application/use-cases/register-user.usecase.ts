@@ -34,7 +34,9 @@ export class RegisterUserUseCase {
   ) {}
 
   async execute(command: RegisterUserCommand): Promise<AuthTokenResult> {
-    const alreadyExists = await this.userRepository.existsByEmail(command.email);
+    const alreadyExists = await this.userRepository.existsByEmail(
+      command.email,
+    );
     if (alreadyExists) {
       throw new UserAlreadyExistsException(command.email);
     }
@@ -61,7 +63,11 @@ export class RegisterUserUseCase {
     });
     return {
       ...tokens,
-      user: { id: savedUser.id, email: savedUser.email, username: savedUser.username },
+      user: {
+        id: savedUser.id,
+        email: savedUser.email,
+        username: savedUser.username,
+      },
     };
   }
 }

@@ -26,7 +26,9 @@ export class NotificationService implements OnModuleInit {
     const subject = this.configService.get<string>('VAPID_SUBJECT');
 
     if (!publicKey || !privateKey || !subject) {
-      this.logger.warn('VAPID keys not fully configured. Web Push will be disabled.');
+      this.logger.warn(
+        'VAPID keys not fully configured. Web Push will be disabled.',
+      );
       return;
     }
 
@@ -37,7 +39,9 @@ export class NotificationService implements OnModuleInit {
   @OnEvent('message.sent')
   async handleMessageSentEvent(event: MessageSentEvent) {
     try {
-      const conversation = await this.conversationRepository.findById(event.conversationId);
+      const conversation = await this.conversationRepository.findById(
+        event.conversationId,
+      );
       if (!conversation) return;
 
       const sender = await this.userRepository.findById(event.senderId);
@@ -46,7 +50,9 @@ export class NotificationService implements OnModuleInit {
       const payload = JSON.stringify({
         title: 'BabyChat',
         // Ảnh/sticker không có content → câu chung thay vì "Name: " rỗng.
-        body: event.content ? `${senderName}: ${event.content}` : `${senderName} sent a message`,
+        body: event.content
+          ? `${senderName}: ${event.content}`
+          : `${senderName} sent a message`,
         url: `/messages?c=${event.conversationId}`,
       });
 
@@ -59,24 +65,42 @@ export class NotificationService implements OnModuleInit {
 
         // Tìm push subscriptions của user
         const user = await this.userRepository.findById(participantId);
-        if (!user || !user.pushSubscriptions || user.pushSubscriptions.length === 0) continue;
+        if (
+          !user ||
+          !user.pushSubscriptions ||
+          user.pushSubscriptions.length === 0
+        )
+          continue;
 
         for (const sub of user.pushSubscriptions) {
           try {
             await webpush.sendNotification(sub, payload);
-            this.logger.log(`Successfully sent Web Push to user ${participantId}`);
+            this.logger.log(
+              `Successfully sent Web Push to user ${participantId}`,
+            );
           } catch (error: any) {
             if (error.statusCode === 404 || error.statusCode === 410) {
-              this.logger.debug(`Subscription expired or removed for user ${participantId}. Lazy cleanup.`);
-              await this.userRepository.removePushSubscription(participantId, sub.endpoint);
+              this.logger.debug(
+                `Subscription expired or removed for user ${participantId}. Lazy cleanup.`,
+              );
+              await this.userRepository.removePushSubscription(
+                participantId,
+                sub.endpoint,
+              );
             } else {
-              this.logger.error(`Error sending push notification to user ${participantId}`, error);
+              this.logger.error(
+                `Error sending push notification to user ${participantId}`,
+                error,
+              );
             }
           }
         }
       }
     } catch (error) {
-      this.logger.error('Error handling message.sent for push notifications', error);
+      this.logger.error(
+        'Error handling message.sent for push notifications',
+        error,
+      );
     }
   }
 }

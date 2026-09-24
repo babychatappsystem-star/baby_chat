@@ -80,11 +80,17 @@ export class MessageEntity {
 
     // Defense-in-depth (lỗ hổng #2): chặn content non-string trước khi gọi .trim().
     // Cho phép undefined/null (image caption optional); mọi kiểu khác string là lỗi.
-    if (props.content !== undefined && props.content !== null && typeof props.content !== 'string') {
+    if (
+      props.content !== undefined &&
+      props.content !== null &&
+      typeof props.content !== 'string'
+    ) {
       throw new DomainError('Message content must be a string');
     }
     if (props.content && props.content.length > MESSAGE_CONTENT_MAX_LENGTH) {
-      throw new InvalidMessageException(`Message content cannot exceed ${MESSAGE_CONTENT_MAX_LENGTH} characters`);
+      throw new InvalidMessageException(
+        `Message content cannot exceed ${MESSAGE_CONTENT_MAX_LENGTH} characters`,
+      );
     }
 
     const type: MessageType = props.type ?? 'text';
@@ -97,7 +103,9 @@ export class MessageEntity {
       }
     } else if (type === 'sticker') {
       if (!props.stickerId || !props.stickerUrl) {
-        throw new InvalidMessageException('Sticker message requires a stickerId and stickerUrl');
+        throw new InvalidMessageException(
+          'Sticker message requires a stickerId and stickerUrl',
+        );
       }
     } else if (!props.content || props.content.trim().length === 0) {
       throw new InvalidMessageException('Message content cannot be empty');
@@ -138,11 +146,17 @@ export class MessageEntity {
     updatedAt: Date;
   }): MessageEntity {
     // Data cũ không có type → default 'text'.
-    return new MessageEntity({ ...props, type: props.type ?? 'text', reactions: props.reactions ?? [] });
+    return new MessageEntity({
+      ...props,
+      type: props.type ?? 'text',
+      reactions: props.reactions ?? [],
+    });
   }
 
   addReaction(userId: string, emoji: string): boolean {
-    const exists = this.reactions.some((r) => r.userId === userId && r.emoji === emoji);
+    const exists = this.reactions.some(
+      (r) => r.userId === userId && r.emoji === emoji,
+    );
     if (exists) return false;
     this.reactions.push({ userId, emoji });
     // Note: domain event will be handled by UseCase manually if not using an aggregate root event queue.
@@ -150,7 +164,9 @@ export class MessageEntity {
   }
 
   removeReaction(userId: string, emoji: string): boolean {
-    const idx = this.reactions.findIndex((r) => r.userId === userId && r.emoji === emoji);
+    const idx = this.reactions.findIndex(
+      (r) => r.userId === userId && r.emoji === emoji,
+    );
     if (idx === -1) return false;
     this.reactions.splice(idx, 1);
     return true;

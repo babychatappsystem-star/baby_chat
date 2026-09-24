@@ -1,6 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { IConversationRepository } from 'src/modules/conversation/domain/i-conversation.repository';
-import { IPageRepository, PAGE_REPOSITORY } from 'src/modules/message/domain/i-page.repository';
+import {
+  IPageRepository,
+  PAGE_REPOSITORY,
+} from 'src/modules/message/domain/i-page.repository';
 import {
   ConversationNotFoundException,
   MessageNotFoundException,
@@ -19,14 +22,18 @@ export interface AddReactionCommand {
 @Injectable()
 export class AddReactionUseCase {
   constructor(
-    @Inject(IConversationRepository) private readonly conversationRepository: IConversationRepository,
+    @Inject(IConversationRepository)
+    private readonly conversationRepository: IConversationRepository,
     @Inject(PAGE_REPOSITORY) private readonly pageRepository: IPageRepository,
     @Inject(EVENT_BUS) private readonly eventBus: IEventBus,
   ) {}
 
   async execute(command: AddReactionCommand): Promise<void> {
-    const conversation = await this.conversationRepository.findById(command.conversationId);
-    if (!conversation) throw new ConversationNotFoundException(command.conversationId);
+    const conversation = await this.conversationRepository.findById(
+      command.conversationId,
+    );
+    if (!conversation)
+      throw new ConversationNotFoundException(command.conversationId);
 
     if (!conversation.isParticipant(command.userId)) {
       throw new NotParticipantException(command.userId);

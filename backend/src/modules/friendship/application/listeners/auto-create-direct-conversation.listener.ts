@@ -8,7 +8,9 @@ import { CreateConversationUseCase } from 'src/modules/conversation/application/
 // (trường hợp kết bạn → unfriend → kết bạn lại), nên không tạo trùng.
 @Injectable()
 export class AutoCreateDirectConversationListener {
-  private readonly logger = new Logger(AutoCreateDirectConversationListener.name);
+  private readonly logger = new Logger(
+    AutoCreateDirectConversationListener.name,
+  );
 
   constructor(private readonly createConversation: CreateConversationUseCase) {}
 

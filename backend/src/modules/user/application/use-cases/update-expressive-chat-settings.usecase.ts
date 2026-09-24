@@ -8,7 +8,12 @@ export class UpdateExpressiveChatSettingsUseCase {
     @Inject(IUserRepository) private readonly userRepository: IUserRepository,
   ) {}
 
-  async execute(userId: string, thresholds: number, transitionTime: number, emojis?: string[]): Promise<void> {
+  async execute(
+    userId: string,
+    thresholds: number,
+    transitionTime: number,
+    emojis?: string[],
+  ): Promise<void> {
     if (thresholds < 2 || thresholds > 10) {
       throw new DomainError('Thresholds must be between 2 and 10');
     }
@@ -20,6 +25,11 @@ export class UpdateExpressiveChatSettingsUseCase {
         throw new DomainError('Emojis count must be between 2 and 10');
       }
     }
-    await this.userRepository.updateExpressiveChatSettings(userId, thresholds, transitionTime, emojis);
+    await this.userRepository.updateExpressiveChatSettings(
+      userId,
+      thresholds,
+      transitionTime,
+      emojis,
+    );
   }
 }

@@ -33,20 +33,24 @@ export class StickerRepository implements IStickerRepository {
     if (!Types.ObjectId.isValid(stickerId)) {
       return null;
     }
-    
+
     const objectId = new Types.ObjectId(stickerId);
     // Find the pack that contains the item
-    const doc = await this.stickerPackModel.findOne({ 'items._id': objectId }).exec();
+    const doc = await this.stickerPackModel
+      .findOne({ 'items._id': objectId })
+      .exec();
     if (!doc) {
       return null;
     }
-    
+
     // Find the specific item in the pack
-    const itemSubdoc = doc.items.find((item) => item._id.toString() === stickerId);
+    const itemSubdoc = doc.items.find(
+      (item) => item._id.toString() === stickerId,
+    );
     if (!itemSubdoc) {
       return null;
     }
-    
+
     return new StickerItem(itemSubdoc._id.toString(), itemSubdoc.url);
   }
 }

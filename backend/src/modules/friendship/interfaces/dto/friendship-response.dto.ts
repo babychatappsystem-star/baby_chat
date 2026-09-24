@@ -35,7 +35,10 @@ export class FriendshipResponseDto {
   @ApiPropertyOptional({ example: '2026-05-25T10:00:00.000Z' })
   updatedAt?: Date;
 
-  @ApiPropertyOptional({ type: FriendUserDto, description: 'Thông tin user đối diện so với user hiện tại' })
+  @ApiPropertyOptional({
+    type: FriendUserDto,
+    description: 'Thông tin user đối diện so với user hiện tại',
+  })
   friend?: FriendUserDto;
 }
 

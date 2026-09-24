@@ -21,7 +21,9 @@ export class FileRepository implements IFileRepository {
 
   // Batch fetch, dedupe + bỏ id rỗng để tránh query thừa.
   async findByIds(ids: string[]): Promise<FileEntity[]> {
-    const unique = Array.from(new Set(ids.filter((id) => id && mongoose.Types.ObjectId.isValid(id))));
+    const unique = Array.from(
+      new Set(ids.filter((id) => id && mongoose.Types.ObjectId.isValid(id))),
+    );
     if (unique.length === 0) return [];
     const docs = await this.model.find({ _id: { $in: unique } }).lean();
     return docs.map((doc) => FileMapper.toDomain(doc as FileDocument));

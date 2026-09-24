@@ -12,11 +12,15 @@ export interface UnblockUserCommand {
 @Injectable()
 export class UnblockUserUseCase {
   constructor(
-    @Inject(IFriendshipRepository) private readonly friendshipRepo: IFriendshipRepository,
+    @Inject(IFriendshipRepository)
+    private readonly friendshipRepo: IFriendshipRepository,
   ) {}
 
   async execute(cmd: UnblockUserCommand): Promise<void> {
-    const existing = await this.friendshipRepo.findBetween(cmd.unblockerId, cmd.blockedId);
+    const existing = await this.friendshipRepo.findBetween(
+      cmd.unblockerId,
+      cmd.blockedId,
+    );
     if (
       !existing ||
       existing.status !== FriendshipStatus.Blocked ||

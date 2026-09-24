@@ -1,7 +1,10 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
 
 export class BusinessException extends HttpException {
-  constructor(message: string, statusCode: HttpStatus = HttpStatus.BAD_REQUEST) {
+  constructor(
+    message: string,
+    statusCode: HttpStatus = HttpStatus.BAD_REQUEST,
+  ) {
     super(
       {
         error: 'BusinessError',
@@ -15,7 +18,9 @@ export class BusinessException extends HttpException {
 
 export class ResourceNotFoundException extends HttpException {
   constructor(resource: string, id?: string) {
-    const message = id ? `${resource} with ID ${id} not found` : `${resource} not found`;
+    const message = id
+      ? `${resource} with ID ${id} not found`
+      : `${resource} not found`;
     super(
       {
         error: 'NotFound',

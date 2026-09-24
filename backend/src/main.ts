@@ -5,7 +5,7 @@ import { GlobalExceptionFilter } from './shared/filters/http-exception.filter';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { join } from 'path';
-import * as morgan from 'morgan'
+import * as morgan from 'morgan';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -43,16 +43,20 @@ async function bootstrap() {
   });
 
   const port = process.env.PORT ?? 3000;
-  
+
   try {
     await app.listen(port);
   } catch (error: any) {
     if (error.code === 'EADDRINUSE') {
       const logger = new Logger('Bootstrap');
-      logger.error(`❌ Cổng (Port) ${port} đang bị chiếm dụng bởi một tiến trình khác!`);
+      logger.error(
+        `❌ Cổng (Port) ${port} đang bị chiếm dụng bởi một tiến trình khác!`,
+      );
       logger.error(`👉 Chạy lệnh sau trong Terminal để giải phóng port:`);
       logger.error(`   npx kill-port ${port}`);
-      logger.error(`Hoặc (Windows PowerShell): Stop-Process -Id (Get-NetTCPConnection -LocalPort ${port}).OwningProcess -Force`);
+      logger.error(
+        `Hoặc (Windows PowerShell): Stop-Process -Id (Get-NetTCPConnection -LocalPort ${port}).OwningProcess -Force`,
+      );
       process.exit(1);
     }
     throw error;

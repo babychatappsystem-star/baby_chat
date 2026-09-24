@@ -27,8 +27,11 @@ export class DeleteConversationUseCase {
   ) {}
 
   async execute(cmd: DeleteConversationCommand): Promise<void> {
-    const conversation = await this.conversationRepository.findById(cmd.conversationId);
-    if (!conversation) throw new ConversationNotFoundException(cmd.conversationId);
+    const conversation = await this.conversationRepository.findById(
+      cmd.conversationId,
+    );
+    if (!conversation)
+      throw new ConversationNotFoundException(cmd.conversationId);
 
     if (!conversation.isParticipant(cmd.userId)) {
       throw new NotParticipantException(cmd.userId);

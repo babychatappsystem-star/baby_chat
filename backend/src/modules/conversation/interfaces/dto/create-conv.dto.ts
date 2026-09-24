@@ -1,5 +1,13 @@
-import { IsString, IsArray, ArrayMinSize, ValidateNested, IsOptional, IsIn, IsMongoId } from "class-validator";
-import { Type } from "class-transformer";
+import {
+  IsString,
+  IsArray,
+  ArrayMinSize,
+  ValidateNested,
+  IsOptional,
+  IsIn,
+  IsMongoId,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 class ParticipantInputDto {

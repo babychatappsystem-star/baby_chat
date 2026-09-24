@@ -13,7 +13,10 @@ import { PageMapper } from './page.mapper';
 // Page là bucket chứa tối đa pageSize tin nhắn — giảm số document trong DB.
 @Injectable()
 export class PageRepository implements IPageRepository {
-  constructor(@InjectModel(PageDocument.name) private readonly pageModel: Model<PageDocument>) {}
+  constructor(
+    @InjectModel(PageDocument.name)
+    private readonly pageModel: Model<PageDocument>,
+  ) {}
 
   // Lấy page theo id, null nếu không tồn tại.
   async findById(id: string): Promise<PageEntity | null> {
@@ -52,7 +55,10 @@ export class PageRepository implements IPageRepository {
       return PageMapper.toDomain(created);
     } catch (err: any) {
       if (err?.code === 11000) {
-        throw new DuplicatePageNumberError(entity.conversationId, entity.pageNumber);
+        throw new DuplicatePageNumberError(
+          entity.conversationId,
+          entity.pageNumber,
+        );
       }
       throw err;
     }
@@ -60,7 +66,10 @@ export class PageRepository implements IPageRepository {
 
   // Atomic push message vào page. $expr đảm bảo không push khi page đã đầy
   // → tránh race condition giữa nhiều request gửi tin cùng lúc.
-  async addMessage(pageId: string, message: MessageEntity): Promise<PageEntity> {
+  async addMessage(
+    pageId: string,
+    message: MessageEntity,
+  ): Promise<PageEntity> {
     const updated = await this.pageModel.findOneAndUpdate(
       {
         _id: new mongoose.Types.ObjectId(pageId),
@@ -74,12 +83,16 @@ export class PageRepository implements IPageRepository {
             content: message.content,
             type: message.type,
             fileId: message.fileId,
-            replyId: message.replyId ? new mongoose.Types.ObjectId(message.replyId) : null,
+            replyId: message.replyId
+              ? new mongoose.Types.ObjectId(message.replyId)
+              : null,
             replySnippet: message.replySnippet,
             replySenderId: message.replySenderId
               ? new mongoose.Types.ObjectId(message.replySenderId)
               : undefined,
-            stickerId: message.stickerId ? new mongoose.Types.ObjectId(message.stickerId) : undefined,
+            stickerId: message.stickerId
+              ? new mongoose.Types.ObjectId(message.stickerId)
+              : undefined,
             stickerUrl: message.stickerUrl,
             createdAt: message.createdAt,
             updatedAt: message.updatedAt,
@@ -98,7 +111,10 @@ export class PageRepository implements IPageRepository {
     conversationId: string,
     pageNumber: number,
   ): Promise<MessageEntity[]> {
-    const page = await this.findByConversationIdAndPageNumber(conversationId, pageNumber);
+    const page = await this.findByConversationIdAndPageNumber(
+      conversationId,
+      pageNumber,
+    );
     return page ? [...page.messages] : [];
   }
 
@@ -140,10 +156,14 @@ export class PageRepository implements IPageRepository {
     );
   }
 
-  async getLatestMessage(conversationId: string): Promise<MessageEntity | null> {
-    const doc = await this.pageModel.findOne({
-      conversationId: new mongoose.Types.ObjectId(conversationId)
-    }).sort({ pageNumber: -1 });
+  async getLatestMessage(
+    conversationId: string,
+  ): Promise<MessageEntity | null> {
+    const doc = await this.pageModel
+      .findOne({
+        conversationId: new mongoose.Types.ObjectId(conversationId),
+      })
+      .sort({ pageNumber: -1 });
 
     if (!doc || doc.messages.length === 0) return null;
     const page = PageMapper.toDomain(doc);

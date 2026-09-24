@@ -3,7 +3,11 @@ import { IConversationRepository } from 'src/modules/conversation/domain/i-conve
 import { IUserRepository } from 'src/modules/user/domain/i-user.repository';
 import { IFriendshipRepository } from 'src/modules/friendship/domain/i-friendship.repository';
 import { FriendshipStatus } from 'src/modules/friendship/domain/friendship.entity';
-import { ConversationEntity, ConversationType, ConversationSettings } from 'src/modules/conversation/domain/conversation.entity';
+import {
+  ConversationEntity,
+  ConversationType,
+  ConversationSettings,
+} from 'src/modules/conversation/domain/conversation.entity';
 import {
   FriendshipBlockedException,
   NotFriendsException,
@@ -29,13 +33,17 @@ export interface CreateConversationCommand {
 @Injectable()
 export class CreateConversationUseCase {
   constructor(
-    @Inject(IConversationRepository) private readonly conversationRepository: IConversationRepository,
+    @Inject(IConversationRepository)
+    private readonly conversationRepository: IConversationRepository,
     @Inject(IUserRepository) private readonly userRepository: IUserRepository,
-    @Inject(IFriendshipRepository) private readonly friendshipRepository: IFriendshipRepository,
+    @Inject(IFriendshipRepository)
+    private readonly friendshipRepository: IFriendshipRepository,
     @Inject(EVENT_BUS) private readonly eventBus: IEventBus,
   ) {}
 
-  async execute(command: CreateConversationCommand): Promise<ConversationEntity> {
+  async execute(
+    command: CreateConversationCommand,
+  ): Promise<ConversationEntity> {
     // Tập user cần lookup = participants + creator. Dùng Set để dedupe nếu creator
     // cũng nằm trong participantUserIds (ConversationEntity.create sẽ tự dedupe sau).
     const allUserIds = Array.from(
@@ -51,11 +59,16 @@ export class CreateConversationUseCase {
       if (!usernames.has(uid)) throw new UserNotFoundException(uid);
     }
 
-    const otherUserIds = allUserIds.filter((uid) => uid !== command.createdByUserId);
+    const otherUserIds = allUserIds.filter(
+      (uid) => uid !== command.createdByUserId,
+    );
     await this.assertFriendsWithCreator(command.createdByUserId, otherUserIds);
 
     if (command.type === 'direct' && otherUserIds.length === 1) {
-      const existing = await this.findDirectConversation(command.createdByUserId, otherUserIds[0]);
+      const existing = await this.findDirectConversation(
+        command.createdByUserId,
+        otherUserIds[0],
+      );
       if (existing) return existing;
     }
 
@@ -84,15 +97,26 @@ export class CreateConversationUseCase {
     return saved;
   }
 
-  private async assertFriendsWithCreator(creatorId: string, otherUserIds: string[]): Promise<void> {
+  private async assertFriendsWithCreator(
+    creatorId: string,
+    otherUserIds: string[],
+  ): Promise<void> {
     for (const uid of otherUserIds) {
-      const friendship = await this.friendshipRepository.findBetween(creatorId, uid);
-      if (friendship?.status === FriendshipStatus.Blocked) throw new FriendshipBlockedException();
-      if (friendship?.status !== FriendshipStatus.Accepted) throw new NotFriendsException(uid);
+      const friendship = await this.friendshipRepository.findBetween(
+        creatorId,
+        uid,
+      );
+      if (friendship?.status === FriendshipStatus.Blocked)
+        throw new FriendshipBlockedException();
+      if (friendship?.status !== FriendshipStatus.Accepted)
+        throw new NotFriendsException(uid);
     }
   }
 
-  private async findDirectConversation(userA: string, userB: string): Promise<ConversationEntity | null> {
+  private async findDirectConversation(
+    userA: string,
+    userB: string,
+  ): Promise<ConversationEntity | null> {
     const conversations = await this.conversationRepository.findByUserId(userA);
     return (
       conversations.find(

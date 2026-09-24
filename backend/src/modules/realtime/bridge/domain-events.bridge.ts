@@ -56,7 +56,10 @@ export class DomainEventsBridge {
         createdAt: (fullMessage?.createdAt ?? new Date()).toISOString(),
       });
     } catch (err) {
-      this.logger.error(`Failed to broadcast message.new for ${event.messageId}`, err as any);
+      this.logger.error(
+        `Failed to broadcast message.new for ${event.messageId}`,
+        err as any,
+      );
     }
   }
 
@@ -100,7 +103,9 @@ export class DomainEventsBridge {
   @OnEvent('conversation.created')
   async onConversationCreated(event: ConversationCreatedEvent): Promise<void> {
     try {
-      const conv = await this.conversationRepository.findById(event.conversationId);
+      const conv = await this.conversationRepository.findById(
+        event.conversationId,
+      );
       if (!conv) return;
 
       const participants = conv.participants.map((p) => ({

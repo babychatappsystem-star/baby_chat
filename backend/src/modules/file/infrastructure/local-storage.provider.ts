@@ -7,13 +7,17 @@ import { IStorageProvider } from 'src/modules/file/domain/i-storage.provider';
 // Lưu file vào thư mục local (UPLOAD_DIR, default ./uploads) và serve qua static
 // route /uploads. URL trả về là relative path để FE tự ghép base URL.
 @Injectable()
-export class LocalStorageProvider extends IStorageProvider implements OnModuleInit {
+export class LocalStorageProvider
+  extends IStorageProvider
+  implements OnModuleInit
+{
   private readonly uploadDir: string;
   private readonly urlPrefix = '/uploads';
 
   constructor(private readonly configService: ConfigService) {
     super();
-    this.uploadDir = this.configService.get<string>('UPLOAD_DIR') ?? './uploads';
+    this.uploadDir =
+      this.configService.get<string>('UPLOAD_DIR') ?? './uploads';
   }
 
   // Đảm bảo thư mục upload tồn tại lúc bootstrap.

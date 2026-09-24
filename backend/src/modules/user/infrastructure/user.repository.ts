@@ -10,7 +10,10 @@ import { UserMapper } from './user.mapper';
 // Mọi return đều đi qua UserMapper để domain layer không phụ thuộc Mongoose document.
 @Injectable()
 export class UserRepository implements IUserRepository {
-  constructor(@InjectModel(UserDocument.name) private readonly userModel: Model<UserDocument>) {}
+  constructor(
+    @InjectModel(UserDocument.name)
+    private readonly userModel: Model<UserDocument>,
+  ) {}
 
   // Tìm user theo MongoId. Dùng .lean() để trả plain object (nhanh hơn document).
   async findById(id: string): Promise<UserEntity | null> {
@@ -29,13 +32,17 @@ export class UserRepository implements IUserRepository {
 
   // Tìm theo email — luôn lowercase trước khi query để khớp với cách lưu.
   async findByEmail(email: string): Promise<UserEntity | null> {
-    const doc = await this.userModel.findOne({ email: email.toLowerCase() }).lean();
+    const doc = await this.userModel
+      .findOne({ email: email.toLowerCase() })
+      .lean();
     return doc ? UserMapper.toDomain(doc as UserDocument) : null;
   }
 
   // Check tồn tại không cần load document — dùng countDocuments cho nhẹ.
   async existsByEmail(email: string): Promise<boolean> {
-    const count = await this.userModel.countDocuments({ email: email.toLowerCase() });
+    const count = await this.userModel.countDocuments({
+      email: email.toLowerCase(),
+    });
     return count > 0;
   }
 
@@ -68,9 +75,16 @@ export class UserRepository implements IUserRepository {
   }
 
   // Set avatarFileId, trả về user đã update.
-  async updateAvatar(userId: string, fileId: string): Promise<UserEntity | null> {
+  async updateAvatar(
+    userId: string,
+    fileId: string,
+  ): Promise<UserEntity | null> {
     const doc = await this.userModel
-      .findByIdAndUpdate(userId, { $set: { avatarFileId: fileId } }, { new: true })
+      .findByIdAndUpdate(
+        userId,
+        { $set: { avatarFileId: fileId } },
+        { new: true },
+      )
       .lean();
     return doc ? UserMapper.toDomain(doc as UserDocument) : null;
   }
@@ -88,16 +102,27 @@ export class UserRepository implements IUserRepository {
 
   // Ghi lastSeenAt; dùng updateOne (không cần trả document về).
   async updateLastSeen(userId: string, date: Date): Promise<void> {
-    await this.userModel.updateOne({ _id: userId }, { $set: { lastSeenAt: date } });
+    await this.userModel.updateOne(
+      { _id: userId },
+      { $set: { lastSeenAt: date } },
+    );
   }
 
   // Toggle hidePresence; dùng updateOne để tránh load toàn bộ document.
   async updateHidePresence(userId: string, hide: boolean): Promise<void> {
-    await this.userModel.updateOne({ _id: userId }, { $set: { hidePresence: hide } });
+    await this.userModel.updateOne(
+      { _id: userId },
+      { $set: { hidePresence: hide } },
+    );
   }
 
   // Cập nhật cấu hình Expressive Chat
-  async updateExpressiveChatSettings(userId: string, thresholds: number, transitionTime: number, emojis?: string[]): Promise<void> {
+  async updateExpressiveChatSettings(
+    userId: string,
+    thresholds: number,
+    transitionTime: number,
+    emojis?: string[],
+  ): Promise<void> {
     const updateDoc: any = {
       expressiveChatThresholds: thresholds,
       expressiveChatTransitionTime: transitionTime,
@@ -105,27 +130,36 @@ export class UserRepository implements IUserRepository {
     if (emojis) {
       updateDoc.expressiveChatEmojis = emojis;
     }
-    await this.userModel.updateOne(
-      { _id: userId },
-      { $set: updateDoc }
-    );
+    await this.userModel.updateOne({ _id: userId }, { $set: updateDoc });
   }
 
   // Web Push Notifications
   // Mỗi endpoint = 1 trình duyệt, chỉ thuộc về 1 user: gỡ khỏi mọi user (kể cả chính mình)
   // rồi mới gắn lại, để trình duyệt đổi tài khoản không nhận push của tài khoản cũ.
-  async addPushSubscription(userId: string, subscription: { endpoint: string; keys: { p256dh: string; auth: string } }): Promise<void> {
+  async addPushSubscription(
+    userId: string,
+    subscription: { endpoint: string; keys: { p256dh: string; auth: string } },
+  ): Promise<void> {
     const _id = this.toObjectId(userId);
     await this.userModel.updateMany(
       { 'pushSubscriptions.endpoint': subscription.endpoint },
       { $pull: { pushSubscriptions: { endpoint: subscription.endpoint } } },
     );
-    await this.userModel.updateOne({ _id }, { $push: { pushSubscriptions: subscription } });
+    await this.userModel.updateOne(
+      { _id },
+      { $push: { pushSubscriptions: subscription } },
+    );
   }
 
-  async removePushSubscription(userId: string, endpoint: string): Promise<void> {
+  async removePushSubscription(
+    userId: string,
+    endpoint: string,
+  ): Promise<void> {
     const _id = this.toObjectId(userId);
-    await this.userModel.updateOne({ _id }, { $pull: { pushSubscriptions: { endpoint } } });
+    await this.userModel.updateOne(
+      { _id },
+      { $pull: { pushSubscriptions: { endpoint } } },
+    );
   }
 
   // Mongoose bỏ key undefined khỏi filter ({ _id: undefined } → {}), nên phải chặn trước

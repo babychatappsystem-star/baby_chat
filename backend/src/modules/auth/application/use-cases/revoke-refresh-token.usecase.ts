@@ -15,7 +15,10 @@ export class RevokeRefreshTokenUseCase {
     if (!cmd.refreshToken) return;
     const userId = this.tokenService.parseUserId(cmd.refreshToken);
     if (!userId) return;
-    const existing = await this.tokenService.findActiveByPlaintext(userId, cmd.refreshToken);
+    const existing = await this.tokenService.findActiveByPlaintext(
+      userId,
+      cmd.refreshToken,
+    );
     if (!existing) return;
     await this.tokenService.revokeById(existing.id!);
   }

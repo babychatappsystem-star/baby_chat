@@ -1,7 +1,10 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { UsersController } from './users.controller';
-import { UserDocument, UserSchema } from 'src/modules/user/infrastructure/user.schema';
+import {
+  UserDocument,
+  UserSchema,
+} from 'src/modules/user/infrastructure/user.schema';
 import { UserRepository } from 'src/modules/user/infrastructure/user.repository';
 import { IUserRepository } from 'src/modules/user/domain/i-user.repository';
 import {
@@ -21,7 +24,9 @@ import { FriendshipModule } from 'src/modules/friendship/interfaces/friendship.m
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: UserDocument.name, schema: UserSchema }]),
+    MongooseModule.forFeature([
+      { name: UserDocument.name, schema: UserSchema },
+    ]),
     FileModule,
     forwardRef(() => FriendshipModule),
   ],

@@ -4,7 +4,10 @@ export abstract class IFriendshipRepository {
   abstract findById(id: string): Promise<FriendshipEntity | null>;
 
   // Tìm bất kỳ document nào giữa 2 user (cả 2 chiều), bất kể status.
-  abstract findBetween(userAId: string, userBId: string): Promise<FriendshipEntity | null>;
+  abstract findBetween(
+    userAId: string,
+    userBId: string,
+  ): Promise<FriendshipEntity | null>;
 
   // Danh sách friendship của user theo status. Với 'accepted' trả về cả 2 chiều.
   abstract findByUserAndStatus(

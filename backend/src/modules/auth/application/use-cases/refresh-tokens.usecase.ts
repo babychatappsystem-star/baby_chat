@@ -1,6 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { IUserRepository } from 'src/modules/user/domain/i-user.repository';
-import { TokenService, IssuedTokens } from 'src/modules/auth/application/token.service';
+import {
+  TokenService,
+  IssuedTokens,
+} from 'src/modules/auth/application/token.service';
 import { InvalidRefreshTokenException } from 'src/shared/exceptions/domain-exceptions';
 
 export interface RefreshTokensCommand {
@@ -30,7 +33,10 @@ export class RefreshTokensUseCase {
     const userId = this.tokenService.parseUserId(cmd.refreshToken);
     if (!userId) throw new InvalidRefreshTokenException();
 
-    const existing = await this.tokenService.findActiveByPlaintext(userId, cmd.refreshToken);
+    const existing = await this.tokenService.findActiveByPlaintext(
+      userId,
+      cmd.refreshToken,
+    );
     if (!existing) throw new InvalidRefreshTokenException();
 
     const user = await this.userRepository.findById(userId);

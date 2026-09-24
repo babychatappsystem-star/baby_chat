@@ -1,7 +1,10 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConversationsController } from './conversations.controller';
-import { ConversationDocument, ConversationSchema } from 'src/modules/conversation/infrastructure/conversation.schema';
+import {
+  ConversationDocument,
+  ConversationSchema,
+} from 'src/modules/conversation/infrastructure/conversation.schema';
 import { ConversationRepository } from 'src/modules/conversation/infrastructure/conversation.repository';
 import { IConversationRepository } from 'src/modules/conversation/domain/i-conversation.repository';
 import { UserModule } from 'src/modules/user/interfaces/users.module';

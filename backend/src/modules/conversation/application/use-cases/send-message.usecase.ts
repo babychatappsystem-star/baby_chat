@@ -3,7 +3,10 @@ import { IConversationRepository } from 'src/modules/conversation/domain/i-conve
 import { DEFAULT_PAGE_SIZE } from 'src/modules/conversation/domain/conversation.entity';
 import { IPageRepository } from 'src/modules/message/domain/i-page.repository';
 import { PageEntity } from 'src/modules/message/domain/page.entity';
-import { MessageEntity, MessageType } from 'src/modules/message/domain/message.entity';
+import {
+  MessageEntity,
+  MessageType,
+} from 'src/modules/message/domain/message.entity';
 import { DuplicatePageNumberError } from 'src/modules/message/domain/errors';
 import { IFileRepository } from 'src/modules/file/domain/i-file.repository';
 import {
@@ -45,17 +48,23 @@ export interface SendMessageCommand {
 @Injectable()
 export class SendMessageUseCase {
   constructor(
-    @Inject(IConversationRepository) private readonly conversationRepository: IConversationRepository,
+    @Inject(IConversationRepository)
+    private readonly conversationRepository: IConversationRepository,
     @Inject(IPageRepository) private readonly pageRepository: IPageRepository,
     @Inject(IFileRepository) private readonly fileRepository: IFileRepository,
-    @Inject(IStickerRepository) private readonly stickerRepository: IStickerRepository,
-    @Inject(IFriendshipRepository) private readonly friendshipRepository: IFriendshipRepository,
+    @Inject(IStickerRepository)
+    private readonly stickerRepository: IStickerRepository,
+    @Inject(IFriendshipRepository)
+    private readonly friendshipRepository: IFriendshipRepository,
     @Inject(EVENT_BUS) private readonly eventBus: IEventBus,
   ) {}
 
   async execute(command: SendMessageCommand): Promise<MessageEntity> {
-    const conversation = await this.conversationRepository.findById(command.conversationId);
-    if (!conversation) throw new ConversationNotFoundException(command.conversationId);
+    const conversation = await this.conversationRepository.findById(
+      command.conversationId,
+    );
+    if (!conversation)
+      throw new ConversationNotFoundException(command.conversationId);
 
     if (!conversation.isParticipant(command.senderId)) {
       throw new NotParticipantException(command.senderId);
@@ -63,10 +72,16 @@ export class SendMessageUseCase {
 
     // Direct: chặn gửi nếu 1 trong 2 bên đã block bên kia. Unfriend vẫn được nhắn tiếp.
     if (conversation.type === 'direct') {
-      const other = conversation.participants.find((p) => p.userId !== command.senderId);
+      const other = conversation.participants.find(
+        (p) => p.userId !== command.senderId,
+      );
       if (other) {
-        const friendship = await this.friendshipRepository.findBetween(command.senderId, other.userId);
-        if (friendship?.status === FriendshipStatus.Blocked) throw new FriendshipBlockedException();
+        const friendship = await this.friendshipRepository.findBetween(
+          command.senderId,
+          other.userId,
+        );
+        if (friendship?.status === FriendshipStatus.Blocked)
+          throw new FriendshipBlockedException();
       }
     }
 
@@ -76,8 +91,11 @@ export class SendMessageUseCase {
     // Sticker validation:
     let stickerUrl: string | undefined;
     if (command.type === 'sticker') {
-      if (!command.stickerId) throw new InvalidMessageException('Sticker message requires stickerId');
-      const stickerItem = await this.stickerRepository.findItemById(command.stickerId);
+      if (!command.stickerId)
+        throw new InvalidMessageException('Sticker message requires stickerId');
+      const stickerItem = await this.stickerRepository.findItemById(
+        command.stickerId,
+      );
       if (!stickerItem) throw new StickerNotFoundException(command.stickerId);
       stickerUrl = stickerItem.url;
     } else if (command.stickerId) {
@@ -88,7 +106,8 @@ export class SendMessageUseCase {
       if (!command.fileId) throw new FileNotFoundException();
       const file = await this.fileRepository.findById(command.fileId);
       if (!file) throw new FileNotFoundException(command.fileId);
-      if (!file.isOwnedBy(command.senderId)) throw new FileAccessDeniedException();
+      if (!file.isOwnedBy(command.senderId))
+        throw new FileAccessDeniedException();
     } else if (command.fileId) {
       // type != 'image' mà vẫn mang fileId → không cho lọt.
       throw new FileNotAllowedForMessageTypeException();
@@ -105,7 +124,8 @@ export class SendMessageUseCase {
       );
       if (original) {
         // Image message gốc có content rỗng → snippet hiển thị "[Hình ảnh]".
-        replySnippet = original.type === 'image' ? '[Hình ảnh]' : original.content;
+        replySnippet =
+          original.type === 'image' ? '[Hình ảnh]' : original.content;
         replySenderId = original.senderId;
       }
     }
@@ -124,7 +144,9 @@ export class SendMessageUseCase {
 
     const MAX_ATTEMPTS = 5;
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-      const targetPage = await this.getOrCreateTargetPage(command.conversationId);
+      const targetPage = await this.getOrCreateTargetPage(
+        command.conversationId,
+      );
       // Nếu null nghĩa là vừa va vào duplicate page → retry vòng ngoài để re-fetch list.
       if (!targetPage) continue;
 
@@ -150,14 +172,19 @@ export class SendMessageUseCase {
       }
     }
 
-    throw new Error(`Failed to send message after ${MAX_ATTEMPTS} attempts (high contention)`);
+    throw new Error(
+      `Failed to send message after ${MAX_ATTEMPTS} attempts (high contention)`,
+    );
   }
 
   // Lấy page đích (page cuối còn chỗ) hoặc tạo page mới nếu cần.
   // Trả null nếu vừa va vào DuplicatePageNumberError → caller retry vòng ngoài
   // để fetch lại danh sách pages (sẽ thấy page do request kia vừa tạo).
-  private async getOrCreateTargetPage(conversationId: string): Promise<PageEntity | null> {
-    const pages = await this.pageRepository.findByConversationId(conversationId);
+  private async getOrCreateTargetPage(
+    conversationId: string,
+  ): Promise<PageEntity | null> {
+    const pages =
+      await this.pageRepository.findByConversationId(conversationId);
     const lastPage = pages[pages.length - 1];
 
     if (pages.length > 0 && !lastPage.isFull) {

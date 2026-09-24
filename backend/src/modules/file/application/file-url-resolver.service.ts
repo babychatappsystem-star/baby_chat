@@ -22,7 +22,9 @@ export class FileUrlResolver {
   }
 
   // Batch resolve nhiều fileId → Map<fileId, ResolvedFileUrl>. Bỏ qua id null/không tồn tại.
-  async resolveMany(fileIds: Array<string | null | undefined>): Promise<Map<string, ResolvedFileUrl>> {
+  async resolveMany(
+    fileIds: Array<string | null | undefined>,
+  ): Promise<Map<string, ResolvedFileUrl>> {
     const valid = fileIds.filter((id): id is string => !!id);
     const files = await this.fileRepository.findByIds(valid);
     const map = new Map<string, ResolvedFileUrl>();

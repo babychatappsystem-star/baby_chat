@@ -1,4 +1,8 @@
-import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
@@ -8,7 +12,10 @@ export class MailService {
   constructor(private readonly configService: ConfigService) {}
 
   async sendVerificationLink(email: string, token: string): Promise<void> {
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:5173');
+    const frontendUrl = this.configService.get<string>(
+      'FRONTEND_URL',
+      'http://localhost:5173',
+    );
     this.logger.log(`Using FRONTEND_URL: ${frontendUrl}`);
     const verificationLink = `${frontendUrl}/create-password?token=${token}&email=${encodeURIComponent(email)}`;
 
@@ -38,7 +45,7 @@ export class MailService {
       const response = await fetch('https://api.brevo.com/v3/smtp/email', {
         method: 'POST',
         headers: {
-          'Accept': 'application/json',
+          Accept: 'application/json',
           'Content-Type': 'application/json',
           'api-key': apiKey,
         },
@@ -59,7 +66,9 @@ export class MailService {
       this.logger.log(`Verification email sent to ${email} via Brevo API`);
     } catch (error) {
       this.logger.error(`Failed to send email to ${email}`, error);
-      throw new ServiceUnavailableException('Không thể gửi email xác nhận. Vui lòng thử lại.');
+      throw new ServiceUnavailableException(
+        'Không thể gửi email xác nhận. Vui lòng thử lại.',
+      );
     }
   }
 }

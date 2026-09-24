@@ -1,5 +1,20 @@
-import { Body, Controller, Delete, Get, HttpCode, Inject, Param, Post, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Inject,
+  Param,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/modules/auth/interfaces/guards/jwt-auth.guard';
 import { CurrentUser } from 'src/shared/decorators/current-user.decorator';
 import { SendFriendRequestUseCase } from 'src/modules/friendship/application/use-cases/send-friend-request.usecase';
@@ -18,8 +33,15 @@ import {
 import { IUserRepository } from 'src/modules/user/domain/i-user.repository';
 import { FriendshipEntity } from 'src/modules/friendship/domain/friendship.entity';
 import { FileUrlResolver } from 'src/modules/file/application/file-url-resolver.service';
-import { BlockUserDto, SendFriendRequestByCodeDto, SendFriendRequestDto } from './dto/friend-request.dto';
-import { FriendshipResponseDto, FriendshipResponseMapper } from './dto/friendship-response.dto';
+import {
+  BlockUserDto,
+  SendFriendRequestByCodeDto,
+  SendFriendRequestDto,
+} from './dto/friend-request.dto';
+import {
+  FriendshipResponseDto,
+  FriendshipResponseMapper,
+} from './dto/friendship-response.dto';
 
 @ApiTags('friendships')
 @ApiBearerAuth('access-token')
@@ -48,24 +70,36 @@ export class FriendshipController {
   ): Promise<Map<string, { username: string; avatarUrl: string | null }>> {
     const otherIds = entities.map((e) => e.otherUserId(currentUserId));
     const users = await this.userRepository.findByIds(otherIds);
-    
+
     // Thu thập tất cả avatarFileId để resolve 1 lần
-    const fileIds = users.map((u) => u.avatarFileId).filter((id): id is string => !!id);
+    const fileIds = users
+      .map((u) => u.avatarFileId)
+      .filter((id): id is string => !!id);
     const resolvedUrls = await this.fileUrlResolver.resolveMany(fileIds);
 
-    return new Map(users.map((u) => {
-      const url = u.avatarFileId ? resolvedUrls.get(u.avatarFileId)?.url ?? null : null;
-      return [u.id!, { username: u.username, avatarUrl: url }];
-    }));
+    return new Map(
+      users.map((u) => {
+        const url = u.avatarFileId
+          ? (resolvedUrls.get(u.avatarFileId)?.url ?? null)
+          : null;
+        return [u.id!, { username: u.username, avatarUrl: url }];
+      }),
+    );
   }
 
   @ApiOperation({ summary: 'Danh sách bạn bè của user hiện tại' })
   @ApiResponse({ status: 200, type: [FriendshipResponseDto] })
   @Get()
-  async getFriends(@CurrentUser('userId') userId: string): Promise<FriendshipResponseDto[]> {
+  async getFriends(
+    @CurrentUser('userId') userId: string,
+  ): Promise<FriendshipResponseDto[]> {
     const result = await this.listFriends.execute(userId);
     const userMetaMap = await this.buildUserMetaMap(result, userId);
-    return FriendshipResponseMapper.toListDtoWithFriend(result, userId, userMetaMap);
+    return FriendshipResponseMapper.toListDtoWithFriend(
+      result,
+      userId,
+      userMetaMap,
+    );
   }
 
   @ApiOperation({ summary: 'Gửi lời mời kết bạn (bằng userId)' })
@@ -100,19 +134,31 @@ export class FriendshipController {
   @ApiOperation({ summary: 'Lời mời đang chờ user hiện tại duyệt' })
   @ApiResponse({ status: 200, type: [FriendshipResponseDto] })
   @Get('/requests/incoming')
-  async incoming(@CurrentUser('userId') userId: string): Promise<FriendshipResponseDto[]> {
+  async incoming(
+    @CurrentUser('userId') userId: string,
+  ): Promise<FriendshipResponseDto[]> {
     const result = await this.listIncoming.execute(userId);
     const userMetaMap = await this.buildUserMetaMap(result, userId);
-    return FriendshipResponseMapper.toListDtoWithFriend(result, userId, userMetaMap);
+    return FriendshipResponseMapper.toListDtoWithFriend(
+      result,
+      userId,
+      userMetaMap,
+    );
   }
 
   @ApiOperation({ summary: 'Lời mời user hiện tại đã gửi, chưa được duyệt' })
   @ApiResponse({ status: 200, type: [FriendshipResponseDto] })
   @Get('/requests/outgoing')
-  async outgoing(@CurrentUser('userId') userId: string): Promise<FriendshipResponseDto[]> {
+  async outgoing(
+    @CurrentUser('userId') userId: string,
+  ): Promise<FriendshipResponseDto[]> {
     const result = await this.listOutgoing.execute(userId);
     const userMetaMap = await this.buildUserMetaMap(result, userId);
-    return FriendshipResponseMapper.toListDtoWithFriend(result, userId, userMetaMap);
+    return FriendshipResponseMapper.toListDtoWithFriend(
+      result,
+      userId,
+      userMetaMap,
+    );
   }
 
   @ApiOperation({ summary: 'Chấp nhận lời mời kết bạn' })
@@ -138,19 +184,29 @@ export class FriendshipController {
     @CurrentUser('userId') userId: string,
     @Param('id') id: string,
   ): Promise<void> {
-    await this.rejectRequest.execute({ friendshipId: id, rejectedByUserId: userId });
+    await this.rejectRequest.execute({
+      friendshipId: id,
+      rejectedByUserId: userId,
+    });
   }
 
   @ApiOperation({ summary: 'Hủy lời mời đã gửi (requester gọi)' })
   @ApiResponse({ status: 204 })
-  @ApiResponse({ status: 404, description: 'Lời mời không tồn tại, đã được duyệt, hoặc user không phải requester' })
+  @ApiResponse({
+    status: 404,
+    description:
+      'Lời mời không tồn tại, đã được duyệt, hoặc user không phải requester',
+  })
   @HttpCode(204)
   @Delete('/requests/:id')
   async cancel(
     @CurrentUser('userId') userId: string,
     @Param('id') id: string,
   ): Promise<void> {
-    await this.cancelRequest.execute({ friendshipId: id, cancelledByUserId: userId });
+    await this.cancelRequest.execute({
+      friendshipId: id,
+      cancelledByUserId: userId,
+    });
   }
 
   @ApiOperation({ summary: 'Chặn một user' })
@@ -175,7 +231,10 @@ export class FriendshipController {
     @CurrentUser('userId') userId: string,
     @Param('userId') blockedUserId: string,
   ): Promise<void> {
-    await this.unblockUser.execute({ unblockerId: userId, blockedId: blockedUserId });
+    await this.unblockUser.execute({
+      unblockerId: userId,
+      blockedId: blockedUserId,
+    });
   }
 
   @ApiOperation({ summary: 'Hủy kết bạn với một user' })

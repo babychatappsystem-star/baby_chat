@@ -19,7 +19,9 @@ export class SendFriendRequestByCodeUseCase {
     private readonly sendFriendRequest: SendFriendRequestUseCase,
   ) {}
 
-  async execute(cmd: SendFriendRequestByCodeCommand): Promise<FriendshipEntity> {
+  async execute(
+    cmd: SendFriendRequestByCodeCommand,
+  ): Promise<FriendshipEntity> {
     const normalized = normalizeFriendCode(cmd.friendCode);
     if (!normalized) throw new UserNotFoundException();
     const recipient = await this.userRepository.findByFriendCode(normalized);

@@ -4,6 +4,9 @@ import { InvalidMessageException } from 'src/shared/exceptions/sticker-exception
 // Độ dài snippet lưu kèm để render reply UI. Cắt ngắn nhưng đủ để user nhận ra context.
 export const REPLY_SNIPPET_MAX_LENGTH = 80;
 
+// Mỗi page chứa tới 100 tin trong 1 document — giới hạn này giữ page xa ngưỡng 16MB của MongoDB.
+export const MESSAGE_CONTENT_MAX_LENGTH = 4000;
+
 export type MessageType = 'text' | 'image' | 'sticker';
 
 export interface CreateMessageProps {
@@ -78,6 +81,9 @@ export class MessageEntity {
     // Cho phép undefined/null (image caption optional); mọi kiểu khác string là lỗi.
     if (props.content !== undefined && props.content !== null && typeof props.content !== 'string') {
       throw new Error('Message content must be a string');
+    }
+    if (props.content && props.content.length > MESSAGE_CONTENT_MAX_LENGTH) {
+      throw new InvalidMessageException(`Message content cannot exceed ${MESSAGE_CONTENT_MAX_LENGTH} characters`);
     }
 
     const type: MessageType = props.type ?? 'text';

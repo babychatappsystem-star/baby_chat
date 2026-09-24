@@ -32,7 +32,7 @@ self.addEventListener('push', (event) => {
               
             messageCount = prevCount + 1;
             title = 'BabyChat';
-            body = `Bạn có ${messageCount} tin nhắn mới...`;
+            body = `You have ${messageCount} new messages`;
             
             // Close the old notification before showing the new one
             currentNotification.close();

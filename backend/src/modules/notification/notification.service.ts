@@ -41,11 +41,12 @@ export class NotificationService implements OnModuleInit {
       if (!conversation) return;
 
       const sender = await this.userRepository.findById(event.senderId);
-      const senderName = sender?.displayName || sender?.username || 'Ai đó';
-      
+      const senderName = sender?.displayName || sender?.username || 'Someone';
+
       const payload = JSON.stringify({
         title: 'BabyChat',
-        body: `${senderName}: ${event.content || 'đã gửi một tin nhắn'}`,
+        // Ảnh/sticker không có content → câu chung thay vì "Name: " rỗng.
+        body: event.content ? `${senderName}: ${event.content}` : `${senderName} sent a message`,
         url: `/messages?c=${event.conversationId}`,
       });
 

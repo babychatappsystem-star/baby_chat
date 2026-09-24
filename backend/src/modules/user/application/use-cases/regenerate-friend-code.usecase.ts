@@ -21,6 +21,8 @@ export class RegenerateFriendCodeUseCase {
       const ok = await this.userRepository.setFriendCode(userId, code);
       if (ok) return code;
     }
-    throw new Error('Failed to generate a unique friend code after multiple attempts');
+    throw new Error(
+      'Failed to generate a unique friend code after multiple attempts',
+    );
   }
 }

@@ -31,16 +31,21 @@ import {
 import { UploadImageUseCase } from 'src/modules/file/application/use-cases/upload-image.usecase';
 import { GetFileUseCase } from 'src/modules/file/application/use-cases/get-file.usecase';
 import { DeleteFileUseCase } from 'src/modules/file/application/use-cases/delete-file.usecase';
-import { FileCategory } from 'src/modules/file/domain/file.entity';
 import { UploadFileDto } from './dto/upload-file.dto';
 import { FileResponseDto } from './dto/file-response.dto';
 
-const ALLOWED_MIMETYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const ALLOWED_MIMETYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+];
 
 // Giới hạn Multer đọc từ env (fallback 5MB). Đọc process.env ở module-level vì
 // @UseInterceptors là decorator tĩnh — không truy cập được ConfigService (DI).
 // ConfigModule isGlobal đã load .env vào process.env lúc bootstrap.
-const MAX_UPLOAD_BYTES = Number(process.env.UPLOAD_MAX_SIZE_MB ?? 5) * 1024 * 1024;
+const MAX_UPLOAD_BYTES =
+  Number(process.env.UPLOAD_MAX_SIZE_MB ?? 5) * 1024 * 1024;
 
 @ApiTags('files')
 @ApiBearerAuth('access-token')
@@ -67,14 +72,25 @@ export class FileController {
         file: { type: 'string', format: 'binary' },
         category: {
           type: 'string',
-          enum: ['user_avatar', 'conversation_avatar', 'message_image', 'other'],
+          enum: [
+            'user_avatar',
+            'conversation_avatar',
+            'message_image',
+            'other',
+          ],
         },
       },
     },
   })
   @ApiResponse({ status: 201, type: FileResponseDto })
-  @ApiResponse({ status: 400, description: 'File không hợp lệ (sai loại / thiếu file)' })
-  @ApiResponse({ status: 413, description: 'File vượt quá dung lượng cho phép' })
+  @ApiResponse({
+    status: 400,
+    description: 'File không hợp lệ (sai loại / thiếu file)',
+  })
+  @ApiResponse({
+    status: 413,
+    description: 'File vượt quá dung lượng cho phép',
+  })
   // POST /files — multipart field `file`. Dùng memoryStorage để có buffer cho sharp.
   @Post()
   @UseInterceptors(
@@ -106,7 +122,7 @@ export class FileController {
 
     const result = await this.uploadImageUseCase.execute({
       ownerId: userId,
-      category: (dto.category ?? 'other') as FileCategory,
+      category: dto.category ?? 'other',
       originalName: file.originalname,
       buffer: file.buffer,
     });

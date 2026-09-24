@@ -56,7 +56,10 @@ export class DomainEventsBridge {
         createdAt: (fullMessage?.createdAt ?? new Date()).toISOString(),
       });
     } catch (err) {
-      this.logger.error(`Failed to broadcast message.new for ${event.messageId}`, err as any);
+      this.logger.error(
+        `Failed to broadcast message.new for ${event.messageId}`,
+        err,
+      );
     }
   }
 
@@ -73,7 +76,7 @@ export class DomainEventsBridge {
     } catch (err) {
       this.logger.error(
         `Failed to broadcast friendship.request_received for ${event.friendshipId}`,
-        err as any,
+        err,
       );
     }
   }
@@ -91,7 +94,7 @@ export class DomainEventsBridge {
     } catch (err) {
       this.logger.error(
         `Failed to broadcast friendship.accepted for ${event.friendshipId}`,
-        err as any,
+        err,
       );
     }
   }
@@ -100,7 +103,9 @@ export class DomainEventsBridge {
   @OnEvent('conversation.created')
   async onConversationCreated(event: ConversationCreatedEvent): Promise<void> {
     try {
-      const conv = await this.conversationRepository.findById(event.conversationId);
+      const conv = await this.conversationRepository.findById(
+        event.conversationId,
+      );
       if (!conv) return;
 
       const participants = conv.participants.map((p) => ({
@@ -119,7 +124,7 @@ export class DomainEventsBridge {
     } catch (err) {
       this.logger.error(
         `Failed to broadcast conversation.created for ${event.conversationId}`,
-        err as any,
+        err,
       );
     }
   }
@@ -130,7 +135,7 @@ export class DomainEventsBridge {
   }
 
   @OnEvent('reaction.updated')
-  async onReactionUpdated(event: ReactionUpdatedEvent): Promise<void> {
+  onReactionUpdated(event: ReactionUpdatedEvent): void {
     try {
       this.gateway.emitReactionUpdated(event.conversationId, {
         messageId: event.messageId,
@@ -142,7 +147,7 @@ export class DomainEventsBridge {
     } catch (err) {
       this.logger.error(
         `Failed to broadcast reaction.updated for message ${event.messageId}`,
-        err as any,
+        err,
       );
     }
   }

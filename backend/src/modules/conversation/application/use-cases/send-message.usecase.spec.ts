@@ -4,7 +4,10 @@ import { IPageRepository } from 'src/modules/message/domain/i-page.repository';
 import { IFileRepository } from 'src/modules/file/domain/i-file.repository';
 import { IStickerRepository } from 'src/modules/sticker/domain/i-sticker.repository';
 import { IFriendshipRepository } from 'src/modules/friendship/domain/i-friendship.repository';
-import { FriendshipEntity, FriendshipStatus } from 'src/modules/friendship/domain/friendship.entity';
+import {
+  FriendshipEntity,
+  FriendshipStatus,
+} from 'src/modules/friendship/domain/friendship.entity';
 import { ConversationEntity } from 'src/modules/conversation/domain/conversation.entity';
 import { PageEntity } from 'src/modules/message/domain/page.entity';
 import { IEventBus } from 'src/shared/events/event-bus';
@@ -15,20 +18,36 @@ const BOB = '64a1b2c3d4e5f6a7b8c9d0b2';
 const CONV_ID = '64a1b2c3d4e5f6a7b8c9d0e4';
 
 describe('SendMessageUseCase — block rules for direct conversations', () => {
-  let friendshipRepository: jest.Mocked<Pick<IFriendshipRepository, 'findBetween'>>;
-  let pageRepository: jest.Mocked<Pick<IPageRepository, 'findByConversationId' | 'addMessage'>>;
+  let friendshipRepository: jest.Mocked<
+    Pick<IFriendshipRepository, 'findBetween'>
+  >;
+  let pageRepository: jest.Mocked<
+    Pick<IPageRepository, 'findByConversationId' | 'addMessage'>
+  >;
   let useCase: SendMessageUseCase;
 
   beforeEach(() => {
     const conversation = ConversationEntity.create({
-      type: 'direct', createdByUserId: ALICE, participantUserIds: [BOB],
-      usernames: new Map([[ALICE, 'alice'], [BOB, 'bob']]),
+      type: 'direct',
+      createdByUserId: ALICE,
+      participantUserIds: [BOB],
+      usernames: new Map([
+        [ALICE, 'alice'],
+        [BOB, 'bob'],
+      ]),
     });
     const page = PageEntity.reconstitute({
-      id: '64a1b2c3d4e5f6a7b8c9d0f5', conversationId: CONV_ID, pageNumber: 1, pageSize: 100,
-      messages: [], messageCount: 0, startTime: new Date(),
+      id: '64a1b2c3d4e5f6a7b8c9d0f5',
+      conversationId: CONV_ID,
+      pageNumber: 1,
+      pageSize: 100,
+      messages: [],
+      messageCount: 0,
+      startTime: new Date(),
     });
-    const conversationRepository = { findById: jest.fn().mockResolvedValue(conversation) };
+    const conversationRepository = {
+      findById: jest.fn().mockResolvedValue(conversation),
+    };
     pageRepository = {
       findByConversationId: jest.fn().mockResolvedValue([page]),
       addMessage: jest.fn().mockResolvedValue(page),
@@ -49,15 +68,25 @@ describe('SendMessageUseCase — block rules for direct conversations', () => {
 
   it('rejects messages when either side has blocked the other', async () => {
     friendshipRepository.findBetween.mockResolvedValue(
-      FriendshipEntity.reconstitute({ id: 'f', requesterId: BOB, recipientId: ALICE, status: FriendshipStatus.Blocked }),
+      FriendshipEntity.reconstitute({
+        id: 'f',
+        requesterId: BOB,
+        recipientId: ALICE,
+        status: FriendshipStatus.Blocked,
+      }),
     );
-    await expect(send(ALICE)).rejects.toBeInstanceOf(FriendshipBlockedException);
+    await expect(send(ALICE)).rejects.toBeInstanceOf(
+      FriendshipBlockedException,
+    );
     await expect(send(BOB)).rejects.toBeInstanceOf(FriendshipBlockedException);
     expect(pageRepository.addMessage).not.toHaveBeenCalled();
   });
 
   it('still allows messages after unfriending (no friendship record)', async () => {
-    await expect(send(ALICE)).resolves.toMatchObject({ content: 'hi', senderId: ALICE });
+    await expect(send(ALICE)).resolves.toMatchObject({
+      content: 'hi',
+      senderId: ALICE,
+    });
     expect(pageRepository.addMessage).toHaveBeenCalledTimes(1);
   });
 });

@@ -3,7 +3,10 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import mongoose from 'mongoose';
 import { IFriendshipRepository } from 'src/modules/friendship/domain/i-friendship.repository';
-import { FriendshipEntity, FriendshipStatus } from 'src/modules/friendship/domain/friendship.entity';
+import {
+  FriendshipEntity,
+  FriendshipStatus,
+} from 'src/modules/friendship/domain/friendship.entity';
 import { FriendshipDocument } from './friendship.schema';
 import { FriendshipMapper } from './friendship.mapper';
 
@@ -21,7 +24,10 @@ export class FriendshipRepository implements IFriendshipRepository {
   }
 
   // Tìm document giữa 2 user theo cả 2 chiều, không lọc status — caller tự xử lý.
-  async findBetween(userAId: string, userBId: string): Promise<FriendshipEntity | null> {
+  async findBetween(
+    userAId: string,
+    userBId: string,
+  ): Promise<FriendshipEntity | null> {
     const a = new mongoose.Types.ObjectId(userAId);
     const b = new mongoose.Types.ObjectId(userBId);
     const doc = await this.model.findOne({
@@ -50,14 +56,20 @@ export class FriendshipRepository implements IFriendshipRepository {
   // Lời mời mà user đang chờ duyệt.
   async findPendingIncoming(userId: string): Promise<FriendshipEntity[]> {
     const uid = new mongoose.Types.ObjectId(userId);
-    const docs = await this.model.find({ recipientId: uid, status: FriendshipStatus.Pending });
+    const docs = await this.model.find({
+      recipientId: uid,
+      status: FriendshipStatus.Pending,
+    });
     return docs.map((d) => FriendshipMapper.toDomain(d));
   }
 
   // Lời mời user đã gửi đi mà chưa được duyệt.
   async findPendingOutgoing(userId: string): Promise<FriendshipEntity[]> {
     const uid = new mongoose.Types.ObjectId(userId);
-    const docs = await this.model.find({ requesterId: uid, status: FriendshipStatus.Pending });
+    const docs = await this.model.find({
+      requesterId: uid,
+      status: FriendshipStatus.Pending,
+    });
     return docs.map((d) => FriendshipMapper.toDomain(d));
   }
 
@@ -80,7 +92,9 @@ export class FriendshipRepository implements IFriendshipRepository {
   async update(entity: FriendshipEntity): Promise<FriendshipEntity> {
     if (!entity.id) throw new Error('Cannot update friendship without id');
     const data = FriendshipMapper.toPersistence(entity);
-    const updated = await this.model.findByIdAndUpdate(entity.id, data, { new: true });
+    const updated = await this.model.findByIdAndUpdate(entity.id, data, {
+      new: true,
+    });
     if (!updated) throw new Error(`Friendship ${entity.id} not found`);
     return FriendshipMapper.toDomain(updated);
   }
@@ -92,10 +106,13 @@ export class FriendshipRepository implements IFriendshipRepository {
   // Trả danh sách userId của bạn bè đã accepted. Query cả 2 chiều, extract ID đầu kia.
   async getFriendIds(userId: string): Promise<string[]> {
     const uid = new mongoose.Types.ObjectId(userId);
-    const docs = await this.model.find({
-      status: FriendshipStatus.Accepted,
-      $or: [{ requesterId: uid }, { recipientId: uid }],
-    }).select('requesterId recipientId').lean();
+    const docs = await this.model
+      .find({
+        status: FriendshipStatus.Accepted,
+        $or: [{ requesterId: uid }, { recipientId: uid }],
+      })
+      .select('requesterId recipientId')
+      .lean();
 
     return docs.map((d) => {
       const reqId = d.requesterId.toString();

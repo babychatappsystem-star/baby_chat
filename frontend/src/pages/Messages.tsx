@@ -20,7 +20,7 @@ import { useDarkMode } from '../hooks/useDarkMode';
 import { useSocketEvent } from '../hooks/useSocketEvent';
 import { useSocketConnect } from '../hooks/useSocketConnect';
 import { WS_EVENTS } from '../lib/wsEvents';
-import { PresenceContext } from '../contexts/PresenceContext';
+import { PresenceContext } from '../contexts/presence-context';
 import { usePresence } from '../hooks/usePresence';
 import { usePushNotifications } from '../shared/hooks/usePushNotifications';
 import environmentLoader from '../config/environmentLoader';

@@ -59,8 +59,15 @@ export class UserEntity {
     this.lastSeenAt = props.lastSeenAt;
     this.hidePresence = props.hidePresence ?? false;
     this.expressiveChatThresholds = props.expressiveChatThresholds ?? 5;
-    this.expressiveChatTransitionTime = props.expressiveChatTransitionTime ?? 300;
-    this.expressiveChatEmojis = props.expressiveChatEmojis ?? ['🙂', '😀', '😄', '😆', '😂'];
+    this.expressiveChatTransitionTime =
+      props.expressiveChatTransitionTime ?? 300;
+    this.expressiveChatEmojis = props.expressiveChatEmojis ?? [
+      '🙂',
+      '😀',
+      '😄',
+      '😆',
+      '😂',
+    ];
     this.pushSubscriptions = props.pushSubscriptions ?? [];
   }
 

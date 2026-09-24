@@ -22,7 +22,10 @@ export class AuthMapper {
   }
 
   // roles không nằm trong UserEntity (lấy từ JWT payload) — truyền riêng.
-  static toProfileResponse(result: ProfileResult, roles?: string[]): ProfileResponseDto {
+  static toProfileResponse(
+    result: ProfileResult,
+    roles?: string[],
+  ): ProfileResponseDto {
     return {
       userId: result.user.id!,
       email: result.user.email,

@@ -51,16 +51,19 @@ export class ConversationResponseMapper {
   ): ConversationResponseDto[] {
     return entities.map((e) =>
       this.toConversationDto(
-        e, 
+        e,
         e.avatarFileId ? avatarUrlMap?.get(e.avatarFileId) : null,
-        participantAvatarUrlMap
+        participantAvatarUrlMap,
       ),
     );
   }
 
   // fileUrl resolve sẵn từ fileId (caller dùng FileUrlResolver). Mặc định null.
   // Chỉ trả fileUrl cho image message — chặn rò URL nếu data cũ/lỗi có fileId trên text message (lỗ hổng #1).
-  static toMessageDto(entity: MessageEntity, fileUrl?: string | null): MessageResponseDto {
+  static toMessageDto(
+    entity: MessageEntity,
+    fileUrl?: string | null,
+  ): MessageResponseDto {
     return {
       id: entity.id,
       senderId: entity.senderId,
@@ -72,7 +75,10 @@ export class ConversationResponseMapper {
       replyId: entity.replyId,
       replySnippet: entity.replySnippet,
       replySenderId: entity.replySenderId,
-      reactions: entity.reactions.map((r) => ({ userId: r.userId, emoji: r.emoji })),
+      reactions: entity.reactions.map((r) => ({
+        userId: r.userId,
+        emoji: r.emoji,
+      })),
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
     };
@@ -84,7 +90,10 @@ export class ConversationResponseMapper {
     fileUrlMap?: Map<string, string>,
   ): MessageResponseDto[] {
     return entities.map((e) =>
-      this.toMessageDto(e, e.type === 'image' && e.fileId ? fileUrlMap?.get(e.fileId) : null),
+      this.toMessageDto(
+        e,
+        e.type === 'image' && e.fileId ? fileUrlMap?.get(e.fileId) : null,
+      ),
     );
   }
 

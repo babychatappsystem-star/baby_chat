@@ -14,7 +14,8 @@ export interface RejectFriendRequestCommand {
 @Injectable()
 export class RejectFriendRequestUseCase {
   constructor(
-    @Inject(IFriendshipRepository) private readonly friendshipRepo: IFriendshipRepository,
+    @Inject(IFriendshipRepository)
+    private readonly friendshipRepo: IFriendshipRepository,
   ) {}
 
   async execute(cmd: RejectFriendRequestCommand): Promise<void> {

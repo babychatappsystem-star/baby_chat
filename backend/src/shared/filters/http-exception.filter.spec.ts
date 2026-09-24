@@ -31,15 +31,25 @@ describe('GlobalExceptionFilter', () => {
   it('maps DomainError to 400 with its message', () => {
     const { code, body } = run(new DomainError('Name is required'));
     expect(code).toBe(400);
-    expect(body).toMatchObject({ error: 'DomainRuleViolation', message: 'Name is required' });
+    expect(body).toMatchObject({
+      error: 'DomainRuleViolation',
+      message: 'Name is required',
+    });
   });
 
   it('maps invalid ObjectId errors to 400', () => {
     let bsonError: unknown;
-    try { new mongoose.Types.ObjectId('abc'); } catch (e) { bsonError = e; }
+    try {
+      new mongoose.Types.ObjectId('abc');
+    } catch (e) {
+      bsonError = e;
+    }
     expect(run(bsonError).code).toBe(400);
     const cast = new mongoose.Error.CastError('ObjectId', 'abc', '_id');
-    expect(run(cast)).toMatchObject({ code: 400, body: { error: 'InvalidId' } });
+    expect(run(cast)).toMatchObject({
+      code: 400,
+      body: { error: 'InvalidId' },
+    });
   });
 
   it('hides internal error details behind a generic 500', () => {

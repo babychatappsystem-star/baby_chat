@@ -39,7 +39,8 @@ export class RefreshTokenEntity {
   static create(props: CreateRefreshTokenProps): RefreshTokenEntity {
     if (!props.userId) throw new Error('userId is required');
     if (!props.tokenHash) throw new Error('tokenHash is required');
-    if (!(props.expiresAt instanceof Date)) throw new Error('expiresAt must be a Date');
+    if (!(props.expiresAt instanceof Date))
+      throw new Error('expiresAt must be a Date');
     return new RefreshTokenEntity(props);
   }
 

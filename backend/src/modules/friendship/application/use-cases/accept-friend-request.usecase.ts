@@ -17,7 +17,8 @@ export interface AcceptFriendRequestCommand {
 @Injectable()
 export class AcceptFriendRequestUseCase {
   constructor(
-    @Inject(IFriendshipRepository) private readonly friendshipRepo: IFriendshipRepository,
+    @Inject(IFriendshipRepository)
+    private readonly friendshipRepo: IFriendshipRepository,
     @Inject(EVENT_BUS) private readonly eventBus: IEventBus,
   ) {}
 
@@ -33,7 +34,11 @@ export class AcceptFriendRequestUseCase {
     const updated = await this.friendshipRepo.update(friendship);
 
     this.eventBus.publish(
-      new FriendshipAcceptedEvent(updated.id!, updated.requesterId, updated.recipientId),
+      new FriendshipAcceptedEvent(
+        updated.id!,
+        updated.requesterId,
+        updated.recipientId,
+      ),
     );
 
     return updated;

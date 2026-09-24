@@ -21,11 +21,18 @@ export class UpdateMyParticipantUsernameUseCase {
     private readonly conversationRepository: IConversationRepository,
   ) {}
 
-  async execute(cmd: UpdateMyParticipantUsernameCommand): Promise<ConversationEntity> {
-    const conversation = await this.conversationRepository.findById(cmd.conversationId);
-    if (!conversation) throw new ConversationNotFoundException(cmd.conversationId);
+  async execute(
+    cmd: UpdateMyParticipantUsernameCommand,
+  ): Promise<ConversationEntity> {
+    const conversation = await this.conversationRepository.findById(
+      cmd.conversationId,
+    );
+    if (!conversation)
+      throw new ConversationNotFoundException(cmd.conversationId);
 
-    const participant = conversation.participants.find((p) => p.userId === cmd.userId);
+    const participant = conversation.participants.find(
+      (p) => p.userId === cmd.userId,
+    );
     if (!participant) throw new NotParticipantException(cmd.userId);
 
     participant.rename(cmd.newUsername);

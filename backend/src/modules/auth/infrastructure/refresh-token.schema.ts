@@ -2,7 +2,10 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import mongoose from 'mongoose';
 
-@Schema({ timestamps: { createdAt: true, updatedAt: false }, collection: 'refresh_tokens' })
+@Schema({
+  timestamps: { createdAt: true, updatedAt: false },
+  collection: 'refresh_tokens',
+})
 export class RefreshTokenDocument extends Document {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
   declare userId: mongoose.Types.ObjectId;
@@ -21,7 +24,8 @@ export class RefreshTokenDocument extends Document {
   declare createdAt: Date;
 }
 
-export const RefreshTokenSchema = SchemaFactory.createForClass(RefreshTokenDocument);
+export const RefreshTokenSchema =
+  SchemaFactory.createForClass(RefreshTokenDocument);
 
 // Query khi refresh: theo (userId, tokenHash). Hash đủ random nên unique.
 RefreshTokenSchema.index({ userId: 1, tokenHash: 1 }, { unique: true });

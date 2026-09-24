@@ -22,10 +22,16 @@ export class UserDocument extends Document {
   @Prop({ default: Date.now })
   declare createdAt: Date;
 
-  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Conversation' }], default: [] })
+  @Prop({
+    type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Conversation' }],
+    default: [],
+  })
   declare listChats: mongoose.Types.ObjectId[];
 
-  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Conversation' }], default: [] })
+  @Prop({
+    type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Conversation' }],
+    default: [],
+  })
   declare listGroups: mongoose.Types.ObjectId[];
 
   // Mã ngẫu nhiên dùng cho flow "thêm bạn bằng code". Lazy-init khi user gọi

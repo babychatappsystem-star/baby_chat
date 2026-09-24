@@ -37,7 +37,9 @@ export class PresenceService {
       this.logger.debug(`User ${userId} went offline`);
       return true; // vừa offline
     }
-    this.logger.debug(`User ${userId} disconnected a device (count: ${entry.connectionCount})`);
+    this.logger.debug(
+      `User ${userId} disconnected a device (count: ${entry.connectionCount})`,
+    );
     return false; // vẫn còn kết nối khác
   }
 

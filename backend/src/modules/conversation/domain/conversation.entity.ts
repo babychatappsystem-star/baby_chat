@@ -115,7 +115,9 @@ export class ConversationEntity {
     }
 
     if (props.type !== 'direct' && !props.name) {
-      throw new DomainError('Name is required for group and channel conversations');
+      throw new DomainError(
+        'Name is required for group and channel conversations',
+      );
     }
 
     // Creator is always admin; dedupe nếu creator có trong participantUserIds
@@ -125,7 +127,9 @@ export class ConversationEntity {
 
     // direct phải có đúng 2 người. Group/channel giới hạn MAX_PARTICIPANTS.
     if (props.type === 'direct' && otherUserIds.length !== 1) {
-      throw new DomainError('Direct conversation must have exactly 2 participants');
+      throw new DomainError(
+        'Direct conversation must have exactly 2 participants',
+      );
     }
     const totalParticipants = otherUserIds.length + 1; // +1 cho creator
     if (totalParticipants > MAX_PARTICIPANTS) {
@@ -136,7 +140,8 @@ export class ConversationEntity {
 
     const usernameFor = (uid: string): string => {
       const name = props.usernames.get(uid);
-      if (!name) throw new DomainError(`Missing username for participant ${uid}`);
+      if (!name)
+        throw new DomainError(`Missing username for participant ${uid}`);
       return name;
     };
 
@@ -147,7 +152,11 @@ export class ConversationEntity {
         role: 'admin',
       }),
       ...otherUserIds.map((uid) =>
-        ParticipantEntity.create({ userId: uid, username: usernameFor(uid), role: 'member' }),
+        ParticipantEntity.create({
+          userId: uid,
+          username: usernameFor(uid),
+          role: 'member',
+        }),
       ),
     ];
 

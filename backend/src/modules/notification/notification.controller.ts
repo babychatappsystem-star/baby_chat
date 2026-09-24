@@ -1,9 +1,20 @@
-import { Body, Controller, Delete, HttpCode, Inject, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  HttpCode,
+  Inject,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/modules/auth/interfaces/guards/jwt-auth.guard';
 import { CurrentUser } from 'src/shared/decorators/current-user.decorator';
 import { IUserRepository } from 'src/modules/user/domain/i-user.repository';
-import { PushSubscriptionDto, UnsubscribePushDto } from './dto/push-subscription.dto';
+import {
+  PushSubscriptionDto,
+  UnsubscribePushDto,
+} from './dto/push-subscription.dto';
 
 @ApiTags('notifications')
 @ApiBearerAuth('access-token')

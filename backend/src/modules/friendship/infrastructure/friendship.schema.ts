@@ -23,7 +23,8 @@ export class FriendshipDocument extends Document {
   declare updatedAt: Date;
 }
 
-export const FriendshipSchema = SchemaFactory.createForClass(FriendshipDocument);
+export const FriendshipSchema =
+  SchemaFactory.createForClass(FriendshipDocument);
 
 // Một chiều giữa 2 user là duy nhất; chiều ngược lại được phép tồn tại độc lập (vd: block).
 FriendshipSchema.index({ requesterId: 1, recipientId: 1 }, { unique: true });

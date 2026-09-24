@@ -89,7 +89,9 @@ export class FriendshipEntity {
   // Chỉ recipient mới được accept; chỉ pending mới chuyển sang accepted.
   accept(byUserId: string): void {
     if (this._status !== FriendshipStatus.Pending) {
-      throw new DomainError(`Cannot accept friendship in status '${this._status}'`);
+      throw new DomainError(
+        `Cannot accept friendship in status '${this._status}'`,
+      );
     }
     if (byUserId !== this.recipientId) {
       throw new DomainError('Only the recipient can accept this request');

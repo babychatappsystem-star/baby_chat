@@ -1,6 +1,9 @@
 import mongoose from 'mongoose';
 import { PageEntity } from 'src/modules/message/domain/page.entity';
-import { MessageEntity } from 'src/modules/message/domain/message.entity';
+import {
+  MessageEntity,
+  MessageType,
+} from 'src/modules/message/domain/message.entity';
 import { PageDocument } from './page.schema';
 
 const toObjectId = (id: string) => new mongoose.Types.ObjectId(id);
@@ -14,7 +17,7 @@ export class PageMapper {
         id: m._id.toString(),
         senderId: m.senderId.toString(),
         content: m.content,
-        type: m.type as any,
+        type: m.type as MessageType,
         fileId: m.fileId,
         replyId: m.replyId?.toString(),
         replySnippet: m.replySnippet,
@@ -31,7 +34,7 @@ export class PageMapper {
     );
 
     return PageEntity.reconstitute({
-      id: (doc._id as any).toString(),
+      id: String(doc._id),
       conversationId: doc.conversationId.toString(),
       pageNumber: doc.pageNumber,
       pageSize: doc.pageSize,
@@ -39,8 +42,8 @@ export class PageMapper {
       messageCount: doc.messageCount,
       startTime: doc.startTime,
       endTime: doc.endTime,
-      createdAt: (doc as any).createdAt,
-      updatedAt: (doc as any).updatedAt,
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
     });
   }
 
@@ -61,7 +64,9 @@ export class PageMapper {
         fileId: m.fileId,
         replyId: m.replyId ? toObjectId(m.replyId) : null,
         replySnippet: m.replySnippet,
-        replySenderId: m.replySenderId ? toObjectId(m.replySenderId) : undefined,
+        replySenderId: m.replySenderId
+          ? toObjectId(m.replySenderId)
+          : undefined,
         stickerId: m.stickerId ? toObjectId(m.stickerId) : undefined,
         stickerUrl: m.stickerUrl,
         reactions: m.reactions.map((r) => ({

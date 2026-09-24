@@ -1,5 +1,8 @@
 import mongoose from 'mongoose';
-import { FriendshipEntity, FriendshipStatus } from 'src/modules/friendship/domain/friendship.entity';
+import {
+  FriendshipEntity,
+  FriendshipStatus,
+} from 'src/modules/friendship/domain/friendship.entity';
 import { FriendshipDocument } from './friendship.schema';
 
 const toObjectId = (id: string) => new mongoose.Types.ObjectId(id);
@@ -7,13 +10,13 @@ const toObjectId = (id: string) => new mongoose.Types.ObjectId(id);
 export class FriendshipMapper {
   static toDomain(doc: FriendshipDocument): FriendshipEntity {
     return FriendshipEntity.reconstitute({
-      id: (doc._id as any).toString(),
+      id: String(doc._id),
       requesterId: doc.requesterId.toString(),
       recipientId: doc.recipientId.toString(),
       status: doc.status as FriendshipStatus,
       acceptedAt: doc.acceptedAt,
-      createdAt: (doc as any).createdAt,
-      updatedAt: (doc as any).updatedAt,
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
     });
   }
 

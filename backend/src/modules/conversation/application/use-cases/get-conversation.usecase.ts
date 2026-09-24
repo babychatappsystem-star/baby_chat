@@ -24,22 +24,36 @@ async function loadConversationForParticipant(
 @Injectable()
 export class GetConversationsByUserUseCase {
   constructor(
-    @Inject(IConversationRepository) private readonly conversationRepository: IConversationRepository,
+    @Inject(IConversationRepository)
+    private readonly conversationRepository: IConversationRepository,
     @Inject(IPageRepository) private readonly pageRepository: IPageRepository,
   ) {}
 
-  async execute(userId: string): Promise<Array<{ conversation: ConversationEntity; lastMessage: MessageEntity | null }>> {
+  async execute(userId: string): Promise<
+    Array<{
+      conversation: ConversationEntity;
+      lastMessage: MessageEntity | null;
+    }>
+  > {
     const convs = await this.conversationRepository.findByUserId(userId);
     const result = await Promise.all(
       convs.map(async (conv) => {
-        const lastMessage = await this.pageRepository.getLatestMessage(conv.id!);
+        const lastMessage = await this.pageRepository.getLatestMessage(
+          conv.id!,
+        );
         return { conversation: conv, lastMessage };
-      })
+      }),
     );
 
     result.sort((a, b) => {
-      const timeA = a.lastMessage?.createdAt?.getTime() ?? a.conversation.updatedAt?.getTime() ?? 0;
-      const timeB = b.lastMessage?.createdAt?.getTime() ?? b.conversation.updatedAt?.getTime() ?? 0;
+      const timeA =
+        a.lastMessage?.createdAt?.getTime() ??
+        a.conversation.updatedAt?.getTime() ??
+        0;
+      const timeB =
+        b.lastMessage?.createdAt?.getTime() ??
+        b.conversation.updatedAt?.getTime() ??
+        0;
       return timeB - timeA;
     });
 
@@ -51,11 +65,16 @@ export class GetConversationsByUserUseCase {
 @Injectable()
 export class GetConversationByIdUseCase {
   constructor(
-    @Inject(IConversationRepository) private readonly conversationRepository: IConversationRepository,
+    @Inject(IConversationRepository)
+    private readonly conversationRepository: IConversationRepository,
   ) {}
 
   execute(id: string, userId: string): Promise<ConversationEntity> {
-    return loadConversationForParticipant(this.conversationRepository, id, userId);
+    return loadConversationForParticipant(
+      this.conversationRepository,
+      id,
+      userId,
+    );
   }
 }
 
@@ -63,13 +82,25 @@ export class GetConversationByIdUseCase {
 @Injectable()
 export class GetMessagesByPageUseCase {
   constructor(
-    @Inject(IConversationRepository) private readonly conversationRepository: IConversationRepository,
+    @Inject(IConversationRepository)
+    private readonly conversationRepository: IConversationRepository,
     @Inject(IPageRepository) private readonly pageRepository: IPageRepository,
   ) {}
 
-  async execute(conversationId: string, pageNumber: number, userId: string): Promise<MessageEntity[]> {
-    await loadConversationForParticipant(this.conversationRepository, conversationId, userId);
-    return this.pageRepository.getMessagesByPageNumber(conversationId, pageNumber);
+  async execute(
+    conversationId: string,
+    pageNumber: number,
+    userId: string,
+  ): Promise<MessageEntity[]> {
+    await loadConversationForParticipant(
+      this.conversationRepository,
+      conversationId,
+      userId,
+    );
+    return this.pageRepository.getMessagesByPageNumber(
+      conversationId,
+      pageNumber,
+    );
   }
 }
 
@@ -85,14 +116,23 @@ export interface PageListResult {
 @Injectable()
 export class GetPageListUseCase {
   constructor(
-    @Inject(IConversationRepository) private readonly conversationRepository: IConversationRepository,
+    @Inject(IConversationRepository)
+    private readonly conversationRepository: IConversationRepository,
     @Inject(IPageRepository) private readonly pageRepository: IPageRepository,
   ) {}
 
-  async execute(conversationId: string, userId: string): Promise<PageListResult> {
-    await loadConversationForParticipant(this.conversationRepository, conversationId, userId);
+  async execute(
+    conversationId: string,
+    userId: string,
+  ): Promise<PageListResult> {
+    await loadConversationForParticipant(
+      this.conversationRepository,
+      conversationId,
+      userId,
+    );
 
-    const pages = await this.pageRepository.findByConversationId(conversationId);
+    const pages =
+      await this.pageRepository.findByConversationId(conversationId);
     // pages từ DB không bảo đảm order — sort theo pageNumber tăng dần.
     pages.sort((a, b) => a.pageNumber - b.pageNumber);
     const limit = pages[0]?.pageSize ?? 0;

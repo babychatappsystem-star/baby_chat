@@ -11,7 +11,8 @@ import { userRoom } from 'src/modules/realtime/gateway/chat.gateway';
 export class UpdatePresenceSettingsUseCase {
   constructor(
     @Inject(IUserRepository) private readonly userRepository: IUserRepository,
-    @Inject(IFriendshipRepository) private readonly friendshipRepository: IFriendshipRepository,
+    @Inject(IFriendshipRepository)
+    private readonly friendshipRepository: IFriendshipRepository,
     private readonly presenceService: PresenceService,
     private readonly gateway: ChatGateway,
   ) {}

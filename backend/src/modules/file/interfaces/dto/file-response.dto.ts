@@ -5,10 +5,15 @@ export class FileResponseDto {
   @ApiProperty({ example: '64a1b2c3d4e5f6a7b8c9d0e1' })
   id: string;
 
-  @ApiProperty({ enum: ['user_avatar', 'conversation_avatar', 'message_image', 'other'] })
+  @ApiProperty({
+    enum: ['user_avatar', 'conversation_avatar', 'message_image', 'other'],
+  })
   category: string;
 
-  @ApiProperty({ example: '/uploads/abc.webp', description: 'URL ảnh chính (relative)' })
+  @ApiProperty({
+    example: '/uploads/abc.webp',
+    description: 'URL ảnh chính (relative)',
+  })
   url: string;
 
   @ApiPropertyOptional({ example: '/uploads/thumb_abc.webp' })

@@ -26,9 +26,14 @@ export class UpdateConversationAvatarUseCase {
     @Inject(IFileRepository) private readonly fileRepository: IFileRepository,
   ) {}
 
-  async execute(cmd: UpdateConversationAvatarCommand): Promise<ConversationEntity> {
-    const conversation = await this.conversationRepository.findById(cmd.conversationId);
-    if (!conversation) throw new ConversationNotFoundException(cmd.conversationId);
+  async execute(
+    cmd: UpdateConversationAvatarCommand,
+  ): Promise<ConversationEntity> {
+    const conversation = await this.conversationRepository.findById(
+      cmd.conversationId,
+    );
+    if (!conversation)
+      throw new ConversationNotFoundException(cmd.conversationId);
 
     if (!conversation.isParticipant(cmd.userId)) {
       throw new NotParticipantException(cmd.userId);

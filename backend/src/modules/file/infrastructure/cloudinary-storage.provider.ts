@@ -29,7 +29,7 @@ export class CloudinaryStorageProvider extends IStorageProvider {
         (error, result) => {
           if (error) {
             this.logger.error('Lỗi khi upload file lên Cloudinary', error);
-            return reject(error);
+            return reject(new Error(error.message));
           }
           if (!result) {
             return reject(new Error('Không nhận được kết quả từ Cloudinary'));

@@ -5,7 +5,10 @@ import { GlobalExceptionFilter } from './shared/filters/http-exception.filter';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { join } from 'path';
-import * as morgan from 'morgan'
+import * as morgan from 'morgan';
+import { errorCode } from 'src/shared/utils/error-code';
+import { getAllowedOrigins } from 'src/shared/config/cors';
+import { CorsIoAdapter } from 'src/shared/config/cors-io.adapter';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -16,7 +19,8 @@ async function bootstrap() {
   // Không dùng forbidNonWhitelisted (tránh 400 phá client hiện có) — chỉ silent-strip.
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
   app.useGlobalFilters(new GlobalExceptionFilter());
-  app.enableCors();
+  app.enableCors({ origin: getAllowedOrigins(), credentials: true });
+  app.useWebSocketAdapter(new CorsIoAdapter(app));
   app.use(morgan.default('dev'));
 
   // Serve file đã upload tại /uploads/<filename>. UPLOAD_DIR khớp với LocalStorageProvider.
@@ -43,16 +47,20 @@ async function bootstrap() {
   });
 
   const port = process.env.PORT ?? 3000;
-  
+
   try {
     await app.listen(port);
-  } catch (error: any) {
-    if (error.code === 'EADDRINUSE') {
+  } catch (error) {
+    if (errorCode(error) === 'EADDRINUSE') {
       const logger = new Logger('Bootstrap');
-      logger.error(`❌ Cổng (Port) ${port} đang bị chiếm dụng bởi một tiến trình khác!`);
+      logger.error(
+        `❌ Cổng (Port) ${port} đang bị chiếm dụng bởi một tiến trình khác!`,
+      );
       logger.error(`👉 Chạy lệnh sau trong Terminal để giải phóng port:`);
       logger.error(`   npx kill-port ${port}`);
-      logger.error(`Hoặc (Windows PowerShell): Stop-Process -Id (Get-NetTCPConnection -LocalPort ${port}).OwningProcess -Force`);
+      logger.error(
+        `Hoặc (Windows PowerShell): Stop-Process -Id (Get-NetTCPConnection -LocalPort ${port}).OwningProcess -Force`,
+      );
       process.exit(1);
     }
     throw error;
@@ -62,4 +70,4 @@ async function bootstrap() {
   logger.log(`Application is running on: http://localhost:${port}`);
   logger.log(`Swagger is running on: http://localhost:${port}/${swaggerPath}`);
 }
-bootstrap();
+void bootstrap();

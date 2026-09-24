@@ -1,5 +1,5 @@
 import { useContext } from 'react';
-import { PresenceContext } from '../contexts/PresenceContext';
+import { PresenceContext } from '../contexts/presence-context';
 import dayjs from 'dayjs';
 
 export interface UsePresenceResult {

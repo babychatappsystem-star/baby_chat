@@ -26,7 +26,11 @@ class MessageSubdoc {
   declare content: string;
 
   // Loại tin nhắn. Data cũ thiếu field → mapper default 'text'.
-  @Prop({ required: false, enum: ['text', 'image', 'sticker'], default: 'text' })
+  @Prop({
+    required: false,
+    enum: ['text', 'image', 'sticker'],
+    default: 'text',
+  })
   declare type?: string;
 
   // Tham chiếu file ảnh (collection 'files') khi type='image'.
@@ -50,7 +54,11 @@ class MessageSubdoc {
   @Prop({
     type: [
       {
-        userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+        userId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+          required: true,
+        },
         emoji: { type: String, required: true },
       },
     ],
@@ -61,7 +69,11 @@ class MessageSubdoc {
 
 @Schema({ timestamps: true, collection: 'pages' })
 export class PageDocument extends Document {
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Conversation', required: true })
+  @Prop({
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Conversation',
+    required: true,
+  })
   declare conversationId: mongoose.Types.ObjectId;
 
   @Prop({ required: true, min: 1 })
@@ -81,6 +93,10 @@ export class PageDocument extends Document {
 
   @Prop({ type: [MessageSubdoc], default: [] })
   declare messages: MessageSubdoc[];
+
+  // Do `timestamps: true` sinh ra — chỉ khai báo kiểu.
+  declare createdAt: Date;
+  declare updatedAt: Date;
 }
 
 export const PageSchema = SchemaFactory.createForClass(PageDocument);

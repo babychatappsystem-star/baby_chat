@@ -33,10 +33,16 @@ class ConvSettingSubdoc {
   @Prop({ default: true })
   declare allowInvites: boolean;
 
-  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], default: [] })
+  @Prop({
+    type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    default: [],
+  })
   declare mutedBy: mongoose.Types.ObjectId[];
 
-  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], default: [] })
+  @Prop({
+    type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    default: [],
+  })
   declare pinnedBy: mongoose.Types.ObjectId[];
 }
 
@@ -71,9 +77,14 @@ export class ConversationDocument extends Document {
   // Query mặc định filter { deletedAt: null } để ẩn khỏi list (xem repository).
   @Prop({ type: Date, required: false, default: null })
   declare deletedAt?: Date | null;
+
+  // Do `timestamps: true` sinh ra — chỉ khai báo kiểu.
+  declare createdAt: Date;
+  declare updatedAt: Date;
 }
 
-export const ConversationSchema = SchemaFactory.createForClass(ConversationDocument);
+export const ConversationSchema =
+  SchemaFactory.createForClass(ConversationDocument);
 
 ConversationSchema.path('participants').validate(
   (value: ParticipantSubdoc[]) => value && value.length > 0,

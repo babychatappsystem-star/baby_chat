@@ -21,23 +21,28 @@ export interface SendVerificationLinkCommand {
 export class SendVerificationLinkUseCase {
   constructor(
     @Inject(IUserRepository) private readonly userRepository: IUserRepository,
-    @InjectModel(VerificationToken.name) private readonly verificationTokenModel: Model<VerificationToken>,
+    @InjectModel(VerificationToken.name)
+    private readonly verificationTokenModel: Model<VerificationToken>,
     private readonly mailService: MailService,
   ) {}
 
   async execute(command: SendVerificationLinkCommand): Promise<void> {
     const email = command.email.toLowerCase();
-    
+
     // 1. Kiểm tra email đã tồn tại trong users chưa
     const alreadyExists = await this.userRepository.existsByEmail(email);
     if (alreadyExists) {
       throw new UserAlreadyExistsException(email);
     }
 
-    const latest = await this.verificationTokenModel.findOne({ email }).sort({ createdAt: -1 });
+    const latest = await this.verificationTokenModel
+      .findOne({ email })
+      .sort({ createdAt: -1 });
     const elapsed = latest ? Date.now() - latest.createdAt.getTime() : Infinity;
     if (elapsed < RESEND_COOLDOWN_MS) {
-      throw new VerificationEmailCooldownException(Math.ceil((RESEND_COOLDOWN_MS - elapsed) / 1000));
+      throw new VerificationEmailCooldownException(
+        Math.ceil((RESEND_COOLDOWN_MS - elapsed) / 1000),
+      );
     }
 
     // 2. Tạo token ngẫu nhiên

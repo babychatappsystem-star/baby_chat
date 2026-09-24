@@ -22,7 +22,7 @@ import { NotificationModule } from './modules/notification/notification.module';
     ConfigModule.forRoot({ isGlobal: true }),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
+      useFactory: (configService: ConfigService) => ({
         uri: configService.get<string>('MONGODB_URI'),
       }),
       inject: [ConfigService],
@@ -33,7 +33,8 @@ import { NotificationModule } from './modules/notification/notification.module';
         const secret = configService.get<string>('JWT_SECRET');
         const expiresIn = configService.get<string>('JWT_ACCESS_TOKEN_EXPIRES');
         if (!secret) throw new Error('JWT_SECRET is not defined');
-        if (!expiresIn) throw new Error('JWT_ACCESS_TOKEN_EXPIRES is not defined');
+        if (!expiresIn)
+          throw new Error('JWT_ACCESS_TOKEN_EXPIRES is not defined');
         return { secret, signOptions: { expiresIn }, global: true };
       },
       inject: [ConfigService],

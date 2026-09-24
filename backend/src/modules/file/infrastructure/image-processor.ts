@@ -19,7 +19,10 @@ const WEBP_QUALITY = 80;
 // Avatar (user/conversation) được center-crop vuông; ảnh message giữ tỉ lệ.
 @Injectable()
 export class ImageProcessor {
-  async process(input: Buffer, category: FileCategory): Promise<ProcessedImage> {
+  async process(
+    input: Buffer,
+    category: FileCategory,
+  ): Promise<ProcessedImage> {
     // Validate là ảnh thật — sharp throw nếu buffer không phải ảnh hợp lệ.
     let meta: sharp.Metadata;
     try {
@@ -50,7 +53,11 @@ export class ImageProcessor {
       .toBuffer({ resolveWithObject: true });
 
     const thumbnailBuffer = await sharp(input)
-      .resize(THUMB_SIZE, THUMB_SIZE, { fit: 'cover', position: 'centre', withoutEnlargement: true })
+      .resize(THUMB_SIZE, THUMB_SIZE, {
+        fit: 'cover',
+        position: 'centre',
+        withoutEnlargement: true,
+      })
       .webp({ quality: WEBP_QUALITY })
       .toBuffer();
 

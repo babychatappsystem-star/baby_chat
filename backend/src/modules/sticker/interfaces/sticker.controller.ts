@@ -13,11 +13,11 @@ export class StickerController {
   @Get('packs')
   async getPacks(): Promise<StickerPackDto[]> {
     const packs = await this.getStickerPacksUseCase.execute();
-    return packs.map(pack => ({
+    return packs.map((pack) => ({
       id: pack.id,
       name: pack.name,
       thumbnailUrl: pack.thumbnailUrl,
-      items: pack.items.map(item => ({
+      items: pack.items.map((item) => ({
         id: item.id,
         url: item.url,
       })),

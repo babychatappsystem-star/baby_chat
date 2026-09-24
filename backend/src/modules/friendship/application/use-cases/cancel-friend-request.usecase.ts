@@ -13,7 +13,8 @@ export interface CancelFriendRequestCommand {
 @Injectable()
 export class CancelFriendRequestUseCase {
   constructor(
-    @Inject(IFriendshipRepository) private readonly friendshipRepo: IFriendshipRepository,
+    @Inject(IFriendshipRepository)
+    private readonly friendshipRepo: IFriendshipRepository,
   ) {}
 
   async execute(cmd: CancelFriendRequestCommand): Promise<void> {

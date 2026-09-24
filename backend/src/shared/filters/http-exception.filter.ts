@@ -34,8 +34,12 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         message = exceptionResponse;
         error = exception.constructor.name;
       } else {
-        message = (exceptionResponse as any).message || exceptionResponse;
-        error = (exceptionResponse as any).error || exception.constructor.name;
+        const body = exceptionResponse as {
+          message?: string | object;
+          error?: string;
+        };
+        message = body.message || exceptionResponse;
+        error = body.error || exception.constructor.name;
       }
     } else if (exception instanceof MongoError) {
       // Handle MongoDB errors
@@ -72,7 +76,9 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         exception instanceof Error ? exception.stack : String(exception),
       );
     } else {
-      this.logger.warn(`${request.method} ${request.url} ${status} ${JSON.stringify(message)}`);
+      this.logger.warn(
+        `${request.method} ${request.url} ${status} ${JSON.stringify(message)}`,
+      );
     }
 
     // Send error response
@@ -89,13 +95,16 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   }
 
   private isInvalidIdError(exception: unknown): boolean {
-    if (exception instanceof mongoose.Error.CastError) return exception.kind === 'ObjectId';
+    if (exception instanceof mongoose.Error.CastError)
+      return exception.kind === 'ObjectId';
     return BSON.BSONError.isBSONError(exception);
   }
 
-  private handleMulterError(
-    error: MulterError,
-  ): { status: number; message: string; error: string } {
+  private handleMulterError(error: MulterError): {
+    status: number;
+    message: string;
+    error: string;
+  } {
     if (error.code === 'LIMIT_FILE_SIZE') {
       const maxSizeMb = Number(process.env.UPLOAD_MAX_SIZE_MB ?? 5);
       return {
@@ -112,7 +121,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     };
   }
 
-  private handleMongoError(error: MongoError): { status: number; message: string } {
+  private handleMongoError(error: MongoError): {
+    status: number;
+    message: string;
+  } {
     switch (error.code) {
       case 11000: // Duplicate key error
         return {

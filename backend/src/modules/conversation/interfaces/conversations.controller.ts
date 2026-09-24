@@ -100,10 +100,14 @@ export class ConversationsController {
 
   @ApiOperation({ summary: 'Lấy hội thoại theo ID' })
   @ApiResponse({ status: 200, type: ConversationResponseDto })
+  @ApiResponse({ status: 403, description: 'Không phải participant của conversation' })
   // GET /conversations/:id — chi tiết conversation. 404 nếu không tồn tại.
   @Get(':id')
-  async getConversationById(@Param('id') id: string): Promise<ConversationResponseDto> {
-    const result = await this.getConversationByIdUseCase.execute(id);
+  async getConversationById(
+    @Param('id') id: string,
+    @CurrentUser('userId') userId: string,
+  ): Promise<ConversationResponseDto> {
+    const result = await this.getConversationByIdUseCase.execute(id, userId);
     const avatarUrl = await this.resolveAvatarUrl(result.avatarFileId);
 
     const participantUserIds = result.participants.map(p => p.userId);
@@ -167,12 +171,18 @@ export class ConversationsController {
   @ApiOperation({ summary: 'Lấy tin nhắn theo trang' })
   @ApiResponse({ status: 200, type: [MessageResponseDto] })
   // GET /conversations/messages/:conversationId/:pageNum — lấy tin nhắn của 1 trang.
+  @ApiResponse({ status: 403, description: 'Không phải participant của conversation' })
   @Get('/messages/:conversationId/:pageNum')
   async getMessages(
     @Param('conversationId') conversationId: string,
     @Param('pageNum') pageNum: string,
+    @CurrentUser('userId') userId: string,
   ): Promise<MessageResponseDto[]> {
-    const result = await this.getMessagesByPageUseCase.execute(conversationId, Number(pageNum));
+    const result = await this.getMessagesByPageUseCase.execute(
+      conversationId,
+      Number(pageNum),
+      userId,
+    );
     // Batch resolve fileUrl — chỉ lấy fileId của image message (tránh rò URL + query thừa).
     const imageFileIds = result.filter((m) => m.type === 'image').map((m) => m.fileId);
     const fileMap = await this.fileUrlResolver.resolveMany(imageFileIds);
@@ -184,9 +194,13 @@ export class ConversationsController {
   @ApiOperation({ summary: 'Lấy danh sách trang của hội thoại' })
   @ApiResponse({ status: 200, type: PageRefResponseDto })
   // GET /conversations/:id/pages — danh sách trang (metadata) của conversation.
+  @ApiResponse({ status: 403, description: 'Không phải participant của conversation' })
   @Get(':id/pages')
-  async getPages(@Param('id') conversationId: string): Promise<PageRefResponseDto> {
-    const result = await this.getPageListUseCase.execute(conversationId);
+  async getPages(
+    @Param('id') conversationId: string,
+    @CurrentUser('userId') userId: string,
+  ): Promise<PageRefResponseDto> {
+    const result = await this.getPageListUseCase.execute(conversationId, userId);
     return ConversationResponseMapper.toPageRefDto(result);
   }
 

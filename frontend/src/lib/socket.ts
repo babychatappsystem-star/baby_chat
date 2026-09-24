@@ -46,6 +46,16 @@ export function connectSocket(accessToken: string): AppSocket {
     }
   });
 
+  const reportFocus = () => {
+    socket?.emit('client.focus', {
+      focused: document.visibilityState === 'visible' && document.hasFocus(),
+    });
+  };
+  socket.on('connect', reportFocus);
+  document.addEventListener('visibilitychange', reportFocus);
+  window.addEventListener('focus', reportFocus);
+  window.addEventListener('blur', reportFocus);
+
   window.dispatchEvent(new Event('socket_initialized'));
 
   return socket;

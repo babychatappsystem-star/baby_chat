@@ -71,5 +71,7 @@ export interface ServerToClientEvents {
   'presence.offline': (p: PresenceOfflinePayload) => void;
 }
 
-// Hiện chưa có client-to-server event nào.
-export type ClientToServerEvents = Record<string, never>;
+// Tab có đang hiển thị + được focus không — server dùng để bỏ qua push khi user đang xem app.
+export interface ClientToServerEvents {
+  'client.focus': (p: { focused: boolean }) => void;
+}

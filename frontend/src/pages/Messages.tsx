@@ -617,7 +617,7 @@ const MessagesPage: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
             <Title level={4} style={{ margin: 0 }}>Chats</Title>
             <Space>
-              <Tooltip title={!pushNotifications.isSupported ? "Trình duyệt không hỗ trợ Push (yêu cầu HTTPS hoặc localhost)" : (pushNotifications.isSubscribed ? "Đã bật thông báo" : "Bật thông báo")}>
+              <Tooltip title={!pushNotifications.isSupported ? "Push notifications are not supported in this browser (requires HTTPS or localhost)" : (pushNotifications.isSubscribed ? "Notifications enabled" : "Enable notifications")}>
                 <Button
                   type="text"
                   size="small"

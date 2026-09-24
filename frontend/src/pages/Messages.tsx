@@ -9,6 +9,7 @@ import isYesterday from 'dayjs/plugin/isYesterday';
 import { StickerPicker } from '../components/feature/StickerPicker';
 import { useSearchParams } from 'react-router-dom';
 import { conversationService } from '../services/conversationService';
+import { getApiErrorMessage } from '../utils/apiError';
 
 dayjs.extend(isToday);
 dayjs.extend(isYesterday);
@@ -411,6 +412,14 @@ const MessagesPage: React.FC = () => {
     }
   };
 
+  const showSendError = (err: unknown) => {
+    antdMessage.error(
+      getApiErrorMessage(err, 'Failed to send message. Please try again.', {
+        FriendshipBlocked: 'You can no longer message this person.',
+      }),
+    );
+  };
+
   const handleSendMessage = async (e?: React.FormEvent<HTMLFormElement>, contentOverride?: string) => {
     e?.preventDefault();
     const content = contentOverride ?? newMessage;
@@ -431,8 +440,9 @@ const MessagesPage: React.FC = () => {
         content,
         replyId: replyIdToSend,
       });
-    } catch {
-      console.error('Failed to send message');
+    } catch (err) {
+      console.error('Failed to send message', err);
+      showSendError(err);
     } finally {
       setIsSending(false);
       inputRef.current?.focus();
@@ -448,8 +458,9 @@ const MessagesPage: React.FC = () => {
         type: 'sticker',
         stickerId,
       });
-    } catch {
-      console.error('Failed to send sticker');
+    } catch (err) {
+      console.error('Failed to send sticker', err);
+      showSendError(err);
     } finally {
       setIsSending(false);
       setStickerPickerOpen(false);

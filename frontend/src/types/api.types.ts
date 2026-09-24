@@ -67,6 +67,7 @@ export interface ConversationDTO {
   createdAt?: string;
   updatedAt?: string;
   lastMessage?: string;
+  lastMessageType?: 'text' | 'image' | 'sticker';
   lastMessageAt?: string;
 }
 
